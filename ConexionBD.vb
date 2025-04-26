@@ -5,7 +5,7 @@ Imports System.Windows.Forms
 Imports BCrypt.Net
 
 Public Class ConexionBD
-    ' 🔒 Cadena de conexión a la base de datos SQLite local
+    ' 🔒 Cadena de conexión a la base de datos SQLite local - H
     Private Shared ReadOnly cadenaConexion As String = "Data Source=C:\Users\DELL\Dropbox\BD_COOPDIASAM\CONJUNTO_2025.db;Version=3;"
 
     ' 🌐 Retorna un objeto SQLiteConnection
