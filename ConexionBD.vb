@@ -1,36 +1,71 @@
-﻿Imports MySql.Data.MySqlClient
+﻿Imports System.Data.SQLite
+Imports System.Security.Cryptography
+Imports System.Text
+Imports System.Windows.Forms
+Imports BCrypt.Net
 
 Public Class ConexionBD
-    ' Cadena de conexión a la base de datos remota
-    Private Shared ReadOnly cadenaConexion As String = "Server=sql5.freesqldatabase.com;Port=3306;Database=sql5772060;Uid=sql5772060;Pwd=N37ZS47X5U;SslMode=Preferred;"
+    ' 🔒 Cadena de conexión a la base de datos SQLite local
+    Private Shared ReadOnly cadenaConexion As String = "Data Source=C:\Users\DELL\Dropbox\BD_COOPDIASAM\CONJUNTO_2025.db;Version=3;"
 
-    ' Retorna un objeto MySqlConnection abierto
-    Public Shared Function ObtenerConexion() As MySqlConnection
-        Return New MySqlConnection(cadenaConexion)
+    ' 🌐 Retorna un objeto SQLiteConnection
+    Public Shared Function ObtenerConexion() As SQLiteConnection
+        Return New SQLiteConnection(cadenaConexion)
     End Function
 
-    ' Verifica si un usuario existe con las credenciales proporcionadas
-    Public Shared Function ValidarUsuario(usuario As String, contraseña As String) As Boolean
-        Dim resultado As Boolean = False
+    ' 🔄 Prueba si hay conexión a la base de datos
+    Public Shared Function ProbarConexion() As Boolean
+        Try
+            Using conexion As SQLiteConnection = ObtenerConexion()
+                conexion.Open()
+                Return True
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error al conectar con la base de datos: " & ex.Message, "Error de conexión", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return False
+        End Try
+    End Function
 
-        Using conexion As MySqlConnection = ObtenerConexion()
-            Try
+    ' 🔐 Genera el hash SHA256 de un texto (mantenemos esta función igual)
+    Public Shared Function GenerarHashSHA256(texto As String) As String
+        Using sha256 As SHA256 = SHA256.Create()
+            Dim bytes As Byte() = Encoding.UTF8.GetBytes(texto)
+            Dim hash As Byte() = sha256.ComputeHash(bytes)
+            Return BitConverter.ToString(hash).Replace("-", "").ToLower()
+        End Using
+    End Function
+
+
+
+
+
+
+    Public Shared Function ValidarUsuario(usuario As String, contrasena As String) As Boolean
+        Try
+            Using conexion As SQLiteConnection = ObtenerConexion()
                 conexion.Open()
 
-                Dim consulta As String = "SELECT COUNT(*) FROM Usuarios WHERE NombreUsuario = @usuario AND Contraseña = @contraseña"
-                Using comando As New MySqlCommand(consulta, conexion)
+                Dim consulta As String = "SELECT ContrasenaHash FROM Usuarios WHERE NombreUsuario = @usuario"
+                Using comando As New SQLiteCommand(consulta, conexion)
                     comando.Parameters.AddWithValue("@usuario", usuario)
-                    comando.Parameters.AddWithValue("@contraseña", contraseña)
 
-                    Dim count As Integer = Convert.ToInt32(comando.ExecuteScalar())
-                    resultado = (count > 0)
+                    Dim hashGuardado As Object = comando.ExecuteScalar()
+
+                    If hashGuardado IsNot Nothing AndAlso Not Convert.IsDBNull(hashGuardado) Then
+                        Dim hashBcrypt As String = hashGuardado.ToString()
+                        Return BCrypt.Net.BCrypt.Verify(contrasena, hashBcrypt)
+                    End If
                 End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error al validar usuario: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
 
-            Catch ex As Exception
-                MessageBox.Show("Error al conectar con la base de datos: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            End Try
-        End Using
-
-        Return resultado
+        Return False
     End Function
+
+
+
+
+
 End Class

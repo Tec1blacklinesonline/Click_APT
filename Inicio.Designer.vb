@@ -22,15 +22,18 @@ Partial Class Inicio
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(Inicio))
         SuspendLayout()
         ' 
-        ' Form1
+        ' Inicio
         ' 
-        AutoScaleDimensions = New SizeF(7F, 15F)
+        resources.ApplyResources(Me, "$this")
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(284, 361)
-        Name = "Form1"
-        Text = "COOPDIASAM"
+        ControlBox = False
+        MaximizeBox = False
+        MdiChildrenMinimizedAnchorBottom = False
+        MinimizeBox = False
+        Name = "Inicio"
         ResumeLayout(False)
     End Sub
 

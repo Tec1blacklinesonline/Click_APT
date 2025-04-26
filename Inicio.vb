@@ -1,92 +1,118 @@
 ﻿Public Class Inicio
-    Private panelLogin As Panel
-    Private txtUsuario As TextBox
-    Private txtPassword As TextBox
+    Private WithEvents btnLogin As New Button()
+    Private WithEvents btnSalir As New Button() ' Nuevo botón Salir
+    Private txtUsuario As New TextBox()
+    Private txtPassword As New TextBox()
+    Private lblEstadoConexion As New Label()
 
-    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        ' Configurar el formulario
+    Private Sub Inicio_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ' Configuración del formulario
         Me.Text = "Login COOPDIASAM"
-        Me.Width = 350
-        Me.Height = 250
+        Me.ClientSize = New Size(350, 350) ' Aumenté la altura para el nuevo botón
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
         Me.MaximizeBox = False
-        Me.MinimizeBox = False
         Me.StartPosition = FormStartPosition.CenterScreen
 
-        ' Crear un panel para contener los elementos del login
-        panelLogin = New Panel()
-        panelLogin.Width = 250
-        panelLogin.Height = 150
-        panelLogin.Left = (Me.ClientSize.Width - panelLogin.Width) / 2
-        panelLogin.Top = (Me.ClientSize.Height - panelLogin.Height) / 2
+        ' Panel contenedor
+        Dim panelLogin As New Panel With {
+            .Size = New Size(250, 220), ' Aumenté la altura para el nuevo botón
+            .Location = New Point((Me.ClientSize.Width - 250) \ 2, 40)
+        }
 
-        ' Crear etiqueta de usuario
-        Dim lblUsuario As New Label()
-        lblUsuario.Text = "Usuario:"
-        lblUsuario.Location = New Point(10, 20)
-        lblUsuario.Width = 80
+        ' Etiqueta usuario
+        Dim lblUsuario As New Label With {
+            .Text = "Usuario:", .Location = New Point(10, 20), .Width = 80
+        }
 
-        ' Caja de texto para usuario
-        txtUsuario = New TextBox()
-        txtUsuario.Location = New Point(90, 20)
-        txtUsuario.Width = 150
+        txtUsuario = New TextBox With {
+            .Location = New Point(90, 20), .Width = 150
+        }
 
-        ' Etiqueta de contraseña
-        Dim lblPassword As New Label()
-        lblPassword.Text = "Contraseña:"
-        lblPassword.Location = New Point(10, 60)
-        lblPassword.Width = 80
+        ' Etiqueta contraseña
+        Dim lblPassword As New Label With {
+            .Text = "Contraseña:", .Location = New Point(10, 60), .Width = 80
+        }
 
-        ' Caja de texto para contraseña
-        txtPassword = New TextBox()
-        txtPassword.Location = New Point(90, 60)
-        txtPassword.Width = 150
-        txtPassword.UseSystemPasswordChar = True ' Reemplaza a PasswordChar
+        txtPassword = New TextBox With {
+            .Location = New Point(90, 60), .Width = 150, .PasswordChar = "*"c
+        }
 
-        ' Botón de login
-        Dim btnLogin As New Button()
-        btnLogin.Text = "Iniciar Sesión"
-        btnLogin.Location = New Point(90, 100)
-        btnLogin.Width = 120
-        AddHandler btnLogin.Click, AddressOf btnLogin_Click
+        ' Botón login
+        btnLogin = New Button With {
+            .Text = "Iniciar Sesión",
+            .Location = New Point(90, 100),
+            .Width = 120
+        }
 
-        ' Agregar controles al panel
-        panelLogin.Controls.Add(lblUsuario)
-        panelLogin.Controls.Add(txtUsuario)
-        panelLogin.Controls.Add(lblPassword)
-        panelLogin.Controls.Add(txtPassword)
-        panelLogin.Controls.Add(btnLogin)
+        ' Nuevo botón Salir
+        btnSalir = New Button With {
+            .Text = "Salir",
+            .Location = New Point(90, 140),
+            .Width = 120,
+            .BackColor = Color.LightCoral,
+            .FlatStyle = FlatStyle.Flat
+        }
+        btnSalir.FlatAppearance.BorderSize = 0
 
-        ' Agregar panel al formulario
+        ' Etiqueta de estado de conexión
+        lblEstadoConexion = New Label With {
+            .AutoSize = True,
+            .ForeColor = Color.Red,
+            .Location = New Point((Me.ClientSize.Width - 200) \ 2, 270), ' Ajusté la posición
+            .TextAlign = ContentAlignment.MiddleCenter
+        }
+
+        panelLogin.Controls.AddRange({lblUsuario, txtUsuario, lblPassword, txtPassword, btnLogin, btnSalir})
         Me.Controls.Add(panelLogin)
+        Me.Controls.Add(lblEstadoConexion)
+
+        ' Probar conexión al cargar
+        If ConexionBD.ProbarConexion() Then
+            lblEstadoConexion.ForeColor = Color.Green
+            lblEstadoConexion.Text = "✔ Conectado a internet"
+        Else
+            lblEstadoConexion.ForeColor = Color.Red
+            lblEstadoConexion.Text = "✖ No se pudo conectar a internet"
+            btnLogin.Enabled = False
+        End If
     End Sub
 
-    Private Sub btnLogin_Click(sender As Object, e As EventArgs)
-        ' Validaciones simples
-        If txtUsuario.Text.Trim() = "" Then
-            MessageBox.Show("Por favor ingrese un nombre de usuario.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+    Private Sub btnLogin_Click(sender As Object, e As EventArgs) Handles btnLogin.Click
+        ' Validar campos vacíos
+        If String.IsNullOrWhiteSpace(txtUsuario.Text) Then
+            MessageBox.Show("Ingrese nombre de usuario", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             txtUsuario.Focus()
             Return
         End If
 
-        If txtPassword.Text.Trim() = "" Then
-            MessageBox.Show("Por favor ingrese una contraseña.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        If String.IsNullOrWhiteSpace(txtPassword.Text) Then
+            MessageBox.Show("Ingrese contraseña", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             txtPassword.Focus()
             Return
         End If
 
+        ' Intentar iniciar sesión
         Try
             If ConexionBD.ValidarUsuario(txtUsuario.Text, txtPassword.Text) Then
-                MessageBox.Show("Inicio de sesión exitoso", "Bienvenido", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                Dim formAdmin As New FormAdministracion()
+                ' Inicio de sesión exitoso, abrir COOPDIASAM
                 Me.Hide()
+                Dim formPrincipal As New COOPDIASAM()
+                formPrincipal.Show()
             Else
-                MessageBox.Show("Usuario o contraseña incorrectos", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                txtPassword.Clear()
+                MessageBox.Show("Credenciales incorrectas", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                txtPassword.SelectAll()
                 txtPassword.Focus()
             End If
         Catch ex As Exception
-            MessageBox.Show("Error al intentar iniciar sesión: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error al iniciar sesión: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    ' Evento para el nuevo botón Salir
+    Private Sub btnSalir_Click(sender As Object, e As EventArgs) Handles btnSalir.Click
+        If MessageBox.Show("¿Está seguro que desea salir del sistema?", "Confirmar salida",
+                         MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+            Application.Exit() ' Cierra completamente la aplicación
+        End If
     End Sub
 End Class

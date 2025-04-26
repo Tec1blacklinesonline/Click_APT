@@ -1,5 +1,5 @@
 ﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
-Partial Class Form2
+Partial Class COOPDIASAM
     Inherits System.Windows.Forms.Form
 
     'Form reemplaza a Dispose para limpiar la lista de componentes.
@@ -24,13 +24,13 @@ Partial Class Form2
     Private Sub InitializeComponent()
         SuspendLayout()
         ' 
-        ' Form2
+        ' COOPDIASAM
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(800, 450)
-        Name = "Form2"
-        Text = "Form2"
+        ClientSize = New Size(718, 450)
+        Name = "COOPDIASAM"
+        Text = "COOPDIASAM"
         ResumeLayout(False)
     End Sub
 End Class
