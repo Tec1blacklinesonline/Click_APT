@@ -1,6 +1,9 @@
 ﻿Imports System.Windows.Forms
+Imports System.Drawing
 
 Public Class FormApartamentosTorre
+    Inherits Form
+
     Private numeroTorre As Integer
     Private apartamentos As List(Of Apartamento)
     Private dgvApartamentos As DataGridView
@@ -14,16 +17,34 @@ Public Class FormApartamentosTorre
         Me.numeroTorre = torre
     End Sub
 
+    Private Sub FormApartamentosTorre_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Try
+            ConfigurarFormulario()
+            CargarApartamentos()
+            MostrarResumen()
+
+            ' Agregar eventos
+            AddHandler dgvApartamentos.CellValueChanged, AddressOf dgvApartamentos_CellValueChanged
+            AddHandler dgvApartamentos.CellFormatting, AddressOf dgvApartamentos_CellFormatting
+        Catch ex As Exception
+            MessageBox.Show($"Error al cargar el formulario: {ex.Message}", "Error",
+                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
     Private Sub ConfigurarFormulario()
         Me.SuspendLayout()
 
         ' Configuración del formulario
         Me.Text = $"Apartamentos Torre {numeroTorre}"
-        Me.Size = New Size(1000, 600)
+        Me.Size = New Size(1200, 650)  ' Ventana más ancha
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
         Me.MaximizeBox = False
         Me.BackColor = Color.FromArgb(240, 240, 240)
+
+        ' Limpiar controles existentes
+        Me.Controls.Clear()
 
         ' Panel superior
         Dim panelSuperior As New Panel With {
@@ -80,7 +101,7 @@ Public Class FormApartamentosTorre
         ' DataGridView para mostrar apartamentos
         dgvApartamentos = New DataGridView With {
             .Dock = DockStyle.Fill,
-            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None,
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             .MultiSelect = False,
             .ReadOnly = False,
@@ -89,18 +110,26 @@ Public Class FormApartamentosTorre
             .RowHeadersVisible = False,
             .BackgroundColor = Color.White,
             .GridColor = Color.LightGray,
+            .ScrollBars = ScrollBars.Both,
+            .AllowUserToResizeColumns = True,
+            .AllowUserToResizeRows = False,
             .DefaultCellStyle = New DataGridViewCellStyle With {
-                .Font = New Font("Segoe UI", 9),
+                .Font = New Font("Segoe UI", 8),
                 .SelectionBackColor = Color.FromArgb(52, 152, 219),
-                .SelectionForeColor = Color.White
+                .SelectionForeColor = Color.White,
+                .Padding = New Padding(2)
             },
             .ColumnHeadersDefaultCellStyle = New DataGridViewCellStyle With {
-                .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+                .Font = New Font("Segoe UI", 8, FontStyle.Bold),
                 .BackColor = Color.FromArgb(52, 73, 94),
                 .ForeColor = Color.White,
-                .Alignment = DataGridViewContentAlignment.MiddleCenter
+                .Alignment = DataGridViewContentAlignment.MiddleCenter,
+                .Padding = New Padding(2)
             },
-            .EnableHeadersVisualStyles = False
+            .EnableHeadersVisualStyles = False,
+            .ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+            .ColumnHeadersHeight = 25,
+            .RowTemplate = New DataGridViewRow With {.Height = 22}
         }
 
         ' Configurar columnas
@@ -115,64 +144,129 @@ Public Class FormApartamentosTorre
     Private Sub ConfigurarColumnas()
         dgvApartamentos.Columns.Clear()
 
-        ' Columna Apartamento
-        dgvApartamentos.Columns.Add("Apartamento", "Apartamento")
-        dgvApartamentos.Columns("Apartamento").Width = 80
-        dgvApartamentos.Columns("Apartamento").ReadOnly = True
+        ' Columna Apartamento (FIJO)
+        Dim colApartamento As New DataGridViewTextBoxColumn With {
+            .Name = "Apartamento",
+            .HeaderText = "Apto",
+            .Width = 85,
+            .ReadOnly = True,
+            .DefaultCellStyle = New DataGridViewCellStyle With {
+                .Alignment = DataGridViewContentAlignment.MiddleCenter,
+                .Font = New Font("Segoe UI", 8, FontStyle.Bold)
+            }
+        }
+        dgvApartamentos.Columns.Add(colApartamento)
 
-        ' Columna Nombre Residente
-        dgvApartamentos.Columns.Add("NombreResidente", "Nombre del Residente")
-        dgvApartamentos.Columns("NombreResidente").Width = 200
-        dgvApartamentos.Columns("NombreResidente").ReadOnly = False
+        ' Columna Nombre Residente (EXPANSIBLE)
+        Dim colNombre As New DataGridViewTextBoxColumn With {
+            .Name = "NombreResidente",
+            .HeaderText = "Nombre del Residente",
+            .AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+            .FillWeight = 30,
+            .MinimumWidth = 180,
+            .ReadOnly = False,
+            .DefaultCellStyle = New DataGridViewCellStyle With {
+                .Alignment = DataGridViewContentAlignment.MiddleLeft,
+                .Font = New Font("Segoe UI", 8)
+            }
+        }
+        dgvApartamentos.Columns.Add(colNombre)
 
-        ' Columna Teléfono
-        dgvApartamentos.Columns.Add("Telefono", "Teléfono")
-        dgvApartamentos.Columns("Telefono").Width = 120
-        dgvApartamentos.Columns("Telefono").ReadOnly = False
+        ' Columna Teléfono (FIJO)
+        Dim colTelefono As New DataGridViewTextBoxColumn With {
+            .Name = "Telefono",
+            .HeaderText = "Teléfono",
+            .Width = 115,
+            .ReadOnly = False,
+            .DefaultCellStyle = New DataGridViewCellStyle With {
+                .Alignment = DataGridViewContentAlignment.MiddleCenter,
+                .Font = New Font("Segoe UI", 8)
+            }
+        }
+        dgvApartamentos.Columns.Add(colTelefono)
 
-        ' Columna Correo
-        dgvApartamentos.Columns.Add("Correo", "Correo Electrónico")
-        dgvApartamentos.Columns("Correo").Width = 200
-        dgvApartamentos.Columns("Correo").ReadOnly = False
+        ' Columna Correo (EXPANSIBLE - LA MÁS GRANDE)
+        Dim colCorreo As New DataGridViewTextBoxColumn With {
+            .Name = "Correo",
+            .HeaderText = "Correo Electrónico",
+            .AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+            .FillWeight = 45,
+            .MinimumWidth = 250,
+            .ReadOnly = False,
+            .DefaultCellStyle = New DataGridViewCellStyle With {
+                .Alignment = DataGridViewContentAlignment.MiddleLeft,
+                .Font = New Font("Segoe UI", 8)
+            }
+        }
+        dgvApartamentos.Columns.Add(colCorreo)
 
-        ' Columna Estado
-        dgvApartamentos.Columns.Add("Estado", "Estado")
-        dgvApartamentos.Columns("Estado").Width = 100
-        dgvApartamentos.Columns("Estado").ReadOnly = True
+        ' Columna Estado (FIJO)
+        Dim colEstado As New DataGridViewTextBoxColumn With {
+            .Name = "Estado",
+            .HeaderText = "Estado",
+            .Width = 95,
+            .ReadOnly = True,
+            .DefaultCellStyle = New DataGridViewCellStyle With {
+                .Alignment = DataGridViewContentAlignment.MiddleCenter,
+                .Font = New Font("Segoe UI", 8, FontStyle.Bold)
+            }
+        }
+        dgvApartamentos.Columns.Add(colEstado)
 
-        ' Columna Saldo
-        dgvApartamentos.Columns.Add("Saldo", "Saldo")
-        dgvApartamentos.Columns("Saldo").Width = 120
-        dgvApartamentos.Columns("Saldo").ReadOnly = True
-        dgvApartamentos.Columns("Saldo").DefaultCellStyle.Format = "C"
-        dgvApartamentos.Columns("Saldo").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+        ' Columna Saldo (EXPANSIBLE)
+        Dim colSaldo As New DataGridViewTextBoxColumn With {
+            .Name = "Saldo",
+            .HeaderText = "Saldo",
+            .AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+            .FillWeight = 15,
+            .MinimumWidth = 100,
+            .ReadOnly = True,
+            .DefaultCellStyle = New DataGridViewCellStyle With {
+                .Format = "C",
+                .Alignment = DataGridViewContentAlignment.MiddleRight,
+                .Font = New Font("Segoe UI", 8, FontStyle.Bold)
+            }
+        }
+        dgvApartamentos.Columns.Add(colSaldo)
 
-        ' Columna Último Pago
-        dgvApartamentos.Columns.Add("UltimoPago", "Último Pago")
-        dgvApartamentos.Columns("UltimoPago").Width = 100
-        dgvApartamentos.Columns("UltimoPago").ReadOnly = True
-        dgvApartamentos.Columns("UltimoPago").DefaultCellStyle.Format = "dd/MM/yyyy"
+        ' Columna Último Pago (EXPANSIBLE)
+        Dim colFecha As New DataGridViewTextBoxColumn With {
+            .Name = "UltimoPago",
+            .HeaderText = "Último Pago",
+            .AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+            .FillWeight = 10,
+            .MinimumWidth = 100,
+            .ReadOnly = True,
+            .DefaultCellStyle = New DataGridViewCellStyle With {
+                .Format = "dd/MM/yyyy",
+                .Alignment = DataGridViewContentAlignment.MiddleCenter,
+                .Font = New Font("Segoe UI", 8)
+            }
+        }
+        dgvApartamentos.Columns.Add(colFecha)
 
         ' Columna oculta para ID
-        dgvApartamentos.Columns.Add("IdApartamento", "ID")
-        dgvApartamentos.Columns("IdApartamento").Visible = False
+        Dim colId As New DataGridViewTextBoxColumn With {
+            .Name = "IdApartamento",
+            .HeaderText = "ID",
+            .Visible = False
+        }
+        dgvApartamentos.Columns.Add(colId)
+
+        ' Configurar propiedades adicionales
+        For Each col As DataGridViewColumn In dgvApartamentos.Columns
+            If col.Visible Then
+                col.SortMode = DataGridViewColumnSortMode.NotSortable
+                col.Resizable = DataGridViewTriState.True
+            End If
+        Next
     End Sub
-
-    Private Sub FormApartamentosTorre_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        ConfigurarFormulario()
-        ConfigurarControles()
-        CargarApartamentos()
-        MostrarResumen()
-
-        ' Agregar eventos
-        AddHandler dgvApartamentos.CellValueChanged, AddressOf dgvApartamentos_CellValueChanged
-        AddHandler dgvApartamentos.CellFormatting, AddressOf dgvApartamentos_CellFormatting
-    End Sub
-
-    Private Sub ConfigurarControles()
 
     Private Sub CargarApartamentos()
         Try
+            ' Mostrar que se está cargando
+            Me.Cursor = Cursors.WaitCursor
+
             ' Obtener apartamentos de la base de datos
             apartamentos = ApartamentoDAL.ObtenerApartamentosPorTorre(numeroTorre)
 
@@ -203,6 +297,8 @@ Public Class FormApartamentosTorre
         Catch ex As Exception
             MessageBox.Show($"Error al cargar apartamentos: {ex.Message}", "Error",
                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        Finally
+            Me.Cursor = Cursors.Default
         End Try
     End Sub
 

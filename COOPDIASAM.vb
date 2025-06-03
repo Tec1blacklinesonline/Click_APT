@@ -16,19 +16,19 @@ Public Class COOPDIASAM
     Private colorFondo As Color = Color.FromArgb(236, 240, 241)      ' Gris muy claro
     Private colorMenu As Color = Color.FromArgb(44, 62, 80)          ' Azul oscuro
     Private colorBoton As Color = Color.FromArgb(52, 73, 94)         ' Gris azulado
+    Private colorPagos As Color = Color.FromArgb(39, 174, 96)        ' Verde para pagos
+    Private colorPagosOscuro As Color = Color.FromArgb(34, 139, 34)  ' Verde oscuro para pagos
 
     Private Sub COOPDIASAM_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Ajustes de la ventana
         Me.Text = "CONJUNTO RESIDENCIAL COOPDIASAMA"
         Me.Size = New Size(1200, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle ' Esto ya lo tienes
-        Me.MaximizeBox = False ' Esto ya lo tienes
-        Me.MinimizeBox = False ' Deshabilita el botón minimizar
-        Me.ControlBox = False ' Elimina TODA la barra de controles (min, max, cerrar)
+        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
+        Me.ControlBox = False
         Me.BackColor = colorFondo
-        ' Eliminar esta línea si no tienes un icono en los recursos
-        ' Me.Icon = My.Resources.IconoApp
 
         ' Crear el panel superior
         CrearPanelSuperior()
@@ -39,10 +39,10 @@ Public Class COOPDIASAM
         ' Crear panel de contenido principal
         CrearPanelContenido()
 
-        ' Crear los botones de las torres en el panel de contenido
+        ' Crear los botones de las torres en el panel de contenido (vista por defecto)
         CrearTorres()
 
-        ' Manejar clics fuera del panel para cerrar el menú con un enfoque más eficiente
+        ' Manejar clics fuera del panel para cerrar el menú
         AddHandler Me.MouseDown, AddressOf Form_MouseDown
     End Sub
 
@@ -66,7 +66,6 @@ Public Class COOPDIASAM
             .BackColor = colorPrimario,
             .ForeColor = Color.White
         }
-        ' Configurar FlatAppearance después de crear el botón
         botonMenu.FlatAppearance.BorderSize = 0
         botonMenu.FlatAppearance.MouseOverBackColor = colorSecundario
 
@@ -83,7 +82,7 @@ Public Class COOPDIASAM
         }
         panelSuperior.Controls.Add(labelTitulo)
 
-        ' Agregar información de usuario (puedes personalizar esto)
+        ' Información de usuario
         Dim labelUsuario As New Label With {
             .Text = "Usuario: Admin",
             .Font = New Font("Segoe UI", 10),
@@ -96,7 +95,7 @@ Public Class COOPDIASAM
     End Sub
 
     Private Sub CrearPanelMenu()
-        ' Panel de menú lateral mejorado
+        ' Panel de menú lateral
         panelMenu = New Panel With {
             .Size = New Size(220, Me.ClientSize.Height - 60),
             .Location = New Point(0, 60),
@@ -105,7 +104,7 @@ Public Class COOPDIASAM
         }
         Me.Controls.Add(panelMenu)
 
-        ' Agregar título al menú
+        ' Título del menú
         Dim lblMenuTitulo As New Label With {
             .Text = "MENÚ PRINCIPAL",
             .Font = New Font("Segoe UI", 12, FontStyle.Bold),
@@ -115,7 +114,7 @@ Public Class COOPDIASAM
         }
         panelMenu.Controls.Add(lblMenuTitulo)
 
-        ' Botones del menú con íconos (puedes agregar íconos si tienes recursos)
+        ' Botones del menú con íconos
         Dim botonesMenu() As String = {"TABLERO", "TORRES", "PROPIETARIOS", "PAGOS", "INFORMES", "CONFIGURACIÓN", "CERRAR SESIÓN"}
         Dim iconos() As String = {"📊", "🏢", "👥", "💰", "📋", "⚙️", "🚪"}
 
@@ -132,7 +131,6 @@ Public Class COOPDIASAM
                 .Padding = New Padding(10, 0, 0, 0),
                 .Tag = botonesMenu(i).ToLower()
             }
-            ' Configurar FlatAppearance después de crear el botón
             btn.FlatAppearance.BorderSize = 0
             btn.FlatAppearance.MouseOverBackColor = colorSecundario
 
@@ -151,6 +149,11 @@ Public Class COOPDIASAM
             .Dock = DockStyle.Fill
         }
         Me.Controls.Add(panelContenido)
+    End Sub
+
+    Private Sub CrearTorres()
+        ' Limpiar panel antes de crear torres
+        panelContenido.Controls.Clear()
 
         ' Título de sección
         Dim lblSeccion As New Label With {
@@ -169,87 +172,86 @@ Public Class COOPDIASAM
             .Location = New Point(20, lblSeccion.Location.Y + 30)
         }
         panelContenido.Controls.Add(lineaDivisoria)
+
+        ' Crear torres
+        CrearTorresLayout("Ver Apartamentos", colorSecundario, colorPrimario, AddressOf Torre_Click)
     End Sub
 
-    Private Sub CrearTorres()
+    Private Sub CrearTorresLayout(textoBoton As String, colorTorre As Color, colorEncabezado As Color, eventoClick As EventHandler)
         Dim nombres() As String = {"Torre 1", "Torre 2", "Torre 3", "Torre 4", "Torre 5", "Torre 6", "Torre 7", "Torre 8"}
-        Dim torresPorFila As Integer = 4 ' Cambia este valor según cuántas torres quieras por fila
+        Dim torresPorFila As Integer = 4
         Dim torresWidth As Integer = 200
         Dim torresHeight As Integer = 150
-        Dim espacioHorizontal As Integer = 30 ' Espacio entre torres horizontalmente
-        Dim espacioVertical As Integer = 30 ' Espacio entre torres verticalmente
+        Dim espacioHorizontal As Integer = 30
+        Dim espacioVertical As Integer = 30
 
-        ' Calcular el ancho total que ocuparán todas las torres en una fila
+        ' Calcular posiciones
         Dim anchoTotalTorres As Integer = (torresWidth * torresPorFila) + (espacioHorizontal * (torresPorFila - 1))
-
-        ' Calcular la posición inicial X para centrar las torres horizontalmente
-        Dim xStart As Integer = (panelContenido.Width - anchoTotalTorres) \ 2
-
-        ' Posición inicial Y (después del título y la línea divisoria)
+        Dim xStart As Integer = Math.Max(20, (panelContenido.Width - anchoTotalTorres) \ 2)
         Dim yStart As Integer = 100
 
         For i As Integer = 0 To nombres.Length - 1
-            ' Calcular posición basada en el índice
             Dim fila As Integer = i \ torresPorFila
             Dim columna As Integer = i Mod torresPorFila
 
             ' Panel contenedor para cada torre
             Dim panelTorre As New Panel With {
-            .Size = New Size(torresWidth, torresHeight),
-            .Location = New Point(xStart + columna * (torresWidth + espacioHorizontal),
-                                yStart + fila * (torresHeight + espacioVertical)),
-            .BackColor = colorSecundario,
-            .Tag = i + 1
-        }
+                .Size = New Size(torresWidth, torresHeight),
+                .Location = New Point(xStart + columna * (torresWidth + espacioHorizontal),
+                                    yStart + fila * (torresHeight + espacioVertical)),
+                .BackColor = colorTorre,
+                .Tag = i + 1
+            }
 
             ' Etiqueta superior con el nombre de la torre
             Dim lblTorre As New Label With {
-            .Text = nombres(i),
-            .Font = New Font("Segoe UI", 12, FontStyle.Bold),
-            .ForeColor = Color.White,
-            .BackColor = colorPrimario,
-            .Size = New Size(torresWidth, 30),
-            .TextAlign = ContentAlignment.MiddleCenter,
-            .Dock = DockStyle.Top
-        }
+                .Text = nombres(i),
+                .Font = New Font("Segoe UI", 12, FontStyle.Bold),
+                .ForeColor = Color.White,
+                .BackColor = colorEncabezado,
+                .Size = New Size(torresWidth, 30),
+                .TextAlign = ContentAlignment.MiddleCenter,
+                .Dock = DockStyle.Top
+            }
             panelTorre.Controls.Add(lblTorre)
 
-            ' Crear botón dentro del panel - ahora centrado horizontalmente
+            ' Botón de acción
             Dim btn As New Button With {
-            .Text = "Ver Apartamentos",
-            .Size = New Size(torresWidth - 40, 40),
-            .Location = New Point((torresWidth - (torresWidth - 40)) \ 2, torresHeight - 60), ' Centrado horizontalmente
-            .BackColor = colorBoton,
-            .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat,
-            .Tag = i + 1,
-            .Font = New Font("Segoe UI", 9)
-        }
+                .Text = textoBoton,
+                .Size = New Size(torresWidth - 40, 40),
+                .Location = New Point((torresWidth - (torresWidth - 40)) \ 2, torresHeight - 60),
+                .BackColor = colorBoton,
+                .ForeColor = Color.White,
+                .FlatStyle = FlatStyle.Flat,
+                .Tag = i + 1,
+                .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+            }
             btn.FlatAppearance.BorderSize = 0
             btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(44, 62, 80)
 
-            AddHandler btn.Click, AddressOf Torre_Click
+            AddHandler btn.Click, eventoClick
             panelTorre.Controls.Add(btn)
 
-            ' Etiqueta con información de la torre - ahora centrada
+            ' Información de la torre
             Dim lblInfo As New Label With {
-            .Text = "5 Pisos" & Environment.NewLine & "20 Apartamentos",
-            .Font = New Font("Segoe UI", 9),
-            .ForeColor = Color.White,
-            .Location = New Point((torresWidth - 160) \ 2, 50), ' Centrado horizontalmente
-            .Size = New Size(160, 40),
-            .TextAlign = ContentAlignment.MiddleCenter
-        }
+                .Text = "5 Pisos" & Environment.NewLine & "20 Apartamentos",
+                .Font = New Font("Segoe UI", 9),
+                .ForeColor = Color.White,
+                .Location = New Point((torresWidth - 160) \ 2, 50),
+                .Size = New Size(160, 40),
+                .TextAlign = ContentAlignment.MiddleCenter
+            }
             panelTorre.Controls.Add(lblInfo)
 
             panelContenido.Controls.Add(panelTorre)
-            botonesTorres.Add(btn)
 
-            ' Efectos hover
-            AddHandler panelTorre.MouseEnter, Sub(sender, e) panelTorre.BackColor = Color.FromArgb(41, 128, 185)
-            AddHandler panelTorre.MouseLeave, Sub(sender, e) panelTorre.BackColor = colorSecundario
+            ' Efectos hover dinámicos
+            Dim colorHover As Color = If(colorTorre = colorSecundario, colorPrimario, Color.FromArgb(46, 204, 113))
+            AddHandler panelTorre.MouseEnter, Sub(sender, e) panelTorre.BackColor = colorHover
+            AddHandler panelTorre.MouseLeave, Sub(sender, e) panelTorre.BackColor = colorTorre
         Next
     End Sub
+
     Private Sub ToggleMenu(sender As Object, e As EventArgs)
         ' Animación simple para el menú
         If panelMenu.Visible Then
@@ -275,7 +277,7 @@ Public Class COOPDIASAM
         Select Case boton.Tag.ToString()
             Case "tablero"
                 labelTitulo.Text = "TABLERO PRINCIPAL"
-                MessageBox.Show("Sección Tablero en desarrollo", "Información")
+                MostrarTablero()
 
             Case "torres"
                 labelTitulo.Text = "GESTIÓN DE TORRES"
@@ -283,39 +285,154 @@ Public Class COOPDIASAM
 
             Case "propietarios"
                 labelTitulo.Text = "GESTIÓN DE PROPIETARIOS"
-                MessageBox.Show("Sección Propietarios en desarrollo", "Información")
+                MostrarSeccionPropietarios()
 
             Case "pagos"
                 labelTitulo.Text = "CONTROL DE PAGOS"
-                MessageBox.Show("Sección Pagos en desarrollo", "Información")
+                MostrarSeccionPagos()
 
             Case "informes"
                 labelTitulo.Text = "INFORMES Y REPORTES"
-                MessageBox.Show("Sección Informes en desarrollo", "Información")
+                MostrarSeccionInformes()
 
             Case "configuración"
                 labelTitulo.Text = "CONFIGURACIÓN DEL SISTEMA"
-                MessageBox.Show("Sección Configuración en desarrollo", "Información")
+                MostrarSeccionConfiguracion()
 
             Case "cerrar sesión"
-                If MessageBox.Show("¿Desea cerrar la sesión?", "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
-                    ' Cerrar el formulario actual
-                    Me.Hide() ' Ocultar en lugar de cerrar para evitar que se cierre toda la aplicación
-
-                    ' Abrir el formulario de login
-                    Dim formLogin As New Inicio() ' Reemplaza "FormLogin" con el nombre de tu formulario de login
-                    formLogin.Show()
-                End If
+                CerrarSesion()
         End Select
 
         ' Cerrar el menú después de seleccionar
         panelMenu.Visible = False
         panelContenido.Left = 0
     End Sub
+
+    Private Sub MostrarTablero()
+        ' Mostrar vista de torres por defecto (dashboard principal)
+        CrearTorres()
+    End Sub
+
     Private Sub MostrarSeccionTorres()
-        ' Esta función ya está implementada por defecto (los botones de torres)
-        ' Aquí podrías recargar los datos de las torres desde la base de datos
-        MessageBox.Show("Visualizando todas las torres", "Torres")
+        ' Reutilizar la función de crear torres para gestión
+        CrearTorres()
+    End Sub
+
+    Private Sub MostrarSeccionPropietarios()
+        ' Limpiar panel
+        panelContenido.Controls.Clear()
+
+        ' Título de sección
+        Dim lblSeccion As New Label With {
+            .Text = "GESTIÓN DE PROPIETARIOS",
+            .Font = New Font("Segoe UI", 14, FontStyle.Bold),
+            .ForeColor = colorMenu,
+            .AutoSize = True,
+            .Location = New Point(20, 20)
+        }
+        panelContenido.Controls.Add(lblSeccion)
+
+        ' Mensaje temporal
+        Dim lblMensaje As New Label With {
+            .Text = "Sección en desarrollo..." & Environment.NewLine & "Aquí se mostrará la gestión de propietarios",
+            .Font = New Font("Segoe UI", 12),
+            .ForeColor = Color.Gray,
+            .Location = New Point(20, 80),
+            .Size = New Size(400, 60)
+        }
+        panelContenido.Controls.Add(lblMensaje)
+    End Sub
+
+    Private Sub MostrarSeccionPagos()
+        ' Limpiar el panel de contenido
+        panelContenido.Controls.Clear()
+
+        ' Título de sección
+        Dim lblSeccion As New Label With {
+            .Text = "SELECCIONE UNA TORRE PARA REGISTRAR PAGOS",
+            .Font = New Font("Segoe UI", 14, FontStyle.Bold),
+            .ForeColor = colorMenu,
+            .AutoSize = True,
+            .Location = New Point(20, 20)
+        }
+        panelContenido.Controls.Add(lblSeccion)
+
+        ' Línea divisoria
+        Dim lineaDivisoria As New Panel With {
+            .BackColor = colorPagos,
+            .Size = New Size(panelContenido.Width - 40, 2),
+            .Location = New Point(20, lblSeccion.Location.Y + 30)
+        }
+        panelContenido.Controls.Add(lineaDivisoria)
+
+        ' Crear torres para pagos con diseño verde
+        CrearTorresLayout("💰 Registrar Pagos", colorPagos, colorPagosOscuro, AddressOf TorrePagos_Click)
+    End Sub
+
+    Private Sub MostrarSeccionInformes()
+        ' Limpiar panel
+        panelContenido.Controls.Clear()
+
+        ' Título de sección
+        Dim lblSeccion As New Label With {
+            .Text = "INFORMES Y REPORTES",
+            .Font = New Font("Segoe UI", 14, FontStyle.Bold),
+            .ForeColor = colorMenu,
+            .AutoSize = True,
+            .Location = New Point(20, 20)
+        }
+        panelContenido.Controls.Add(lblSeccion)
+
+        ' Mensaje temporal
+        Dim lblMensaje As New Label With {
+            .Text = "Sección en desarrollo..." & Environment.NewLine & "Aquí se mostrarán los informes y reportes",
+            .Font = New Font("Segoe UI", 12),
+            .ForeColor = Color.Gray,
+            .Location = New Point(20, 80),
+            .Size = New Size(400, 60)
+        }
+        panelContenido.Controls.Add(lblMensaje)
+    End Sub
+
+    Private Sub MostrarSeccionConfiguracion()
+        ' Limpiar panel
+        panelContenido.Controls.Clear()
+
+        ' Título de sección
+        Dim lblSeccion As New Label With {
+            .Text = "CONFIGURACIÓN DEL SISTEMA",
+            .Font = New Font("Segoe UI", 14, FontStyle.Bold),
+            .ForeColor = colorMenu,
+            .AutoSize = True,
+            .Location = New Point(20, 20)
+        }
+        panelContenido.Controls.Add(lblSeccion)
+
+        ' Mensaje temporal
+        Dim lblMensaje As New Label With {
+            .Text = "Sección en desarrollo..." & Environment.NewLine & "Aquí se mostrará la configuración del sistema",
+            .Font = New Font("Segoe UI", 12),
+            .ForeColor = Color.Gray,
+            .Location = New Point(20, 80),
+            .Size = New Size(400, 60)
+        }
+        panelContenido.Controls.Add(lblMensaje)
+    End Sub
+
+    Private Sub CerrarSesion()
+        If MessageBox.Show("¿Desea cerrar la sesión?", "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+            Try
+                ' Ocultar formulario actual
+                Me.Hide()
+
+                ' Abrir formulario de login
+                Dim formLogin As New Inicio()
+                formLogin.Show()
+            Catch ex As Exception
+                MessageBox.Show($"Error al cerrar sesión: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Application.Exit()
+            End Try
+        End If
     End Sub
 
     Private Sub Torre_Click(sender As Object, e As EventArgs)
@@ -328,12 +445,26 @@ Public Class COOPDIASAM
             formApartamentos.ShowDialog()
         Catch ex As Exception
             MessageBox.Show($"Error al abrir la torre {numeroTorre}: {ex.Message}", "Error",
-                      MessageBoxButtons.OK, MessageBoxIcon.Error)
+                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub TorrePagos_Click(sender As Object, e As EventArgs)
+        Dim boton As Button = CType(sender, Button)
+        Dim numeroTorre As Integer = CInt(boton.Tag)
+
+        Try
+            ' Abrir el formulario de pagos para la torre seleccionada
+            Dim formPagos As New FormPagos(numeroTorre)
+            formPagos.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show($"Error al abrir pagos de la torre {numeroTorre}: {ex.Message}", "Error",
+                          MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
     Private Sub Form_MouseDown(sender As Object, e As MouseEventArgs)
-        ' Método más eficiente para detectar clicks fuera del menú 
+        ' Detectar clicks fuera del menú para cerrarlo
         If panelMenu.Visible AndAlso Not panelMenu.Bounds.Contains(PointToClient(Cursor.Position)) Then
             If Not botonMenu.Bounds.Contains(PointToClient(Cursor.Position)) Then
                 panelMenu.Visible = False
@@ -343,17 +474,15 @@ Public Class COOPDIASAM
     End Sub
 
     Private Sub COOPDIASAM_Resize(sender As Object, e As EventArgs) Handles MyBase.Resize
-        ' Manejar el redimensionamiento del formulario si es necesario
+        ' Manejar redimensionamiento si es necesario
         If panelContenido IsNot Nothing Then
-            ' Actualizar anchura de la línea divisoria y otros controles si fuera necesario
+            ' Actualizar elementos responsivos aquí si fuera necesario
         End If
     End Sub
 
-
     Private Sub COOPDIASAM_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        ' Este método ya no es necesario con el nuevo enfoque
-        ' Pero puedes dejarlo si tiene otra funcionalidad importante
+        ' Limpiar recursos si es necesario
+        Application.Exit()
     End Sub
-
 
 End Class
