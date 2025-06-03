@@ -322,16 +322,14 @@ Public Class COOPDIASAM
         Dim boton As Button = CType(sender, Button)
         Dim numeroTorre As Integer = CInt(boton.Tag)
 
-        ' Aquí deberías abrir un nuevo formulario para mostrar los apartamentos de esta torre
-        MessageBox.Show($"Abriendo detalles de la Torre {numeroTorre}" & Environment.NewLine &
-                       "Pisos: 5" & Environment.NewLine &
-                       "Apartamentos por piso: 4" & Environment.NewLine &
-                       "Total apartamentos: 20",
-                       $"Torre {numeroTorre}")
-
-        ' Para implementar en el futuro:
-        ' Dim formTorre As New FormDetalleTorre(numeroTorre)
-        ' formTorre.ShowDialog()
+        Try
+            ' Abrir el formulario de apartamentos por torre
+            Dim formApartamentos As New FormApartamentosTorre(numeroTorre)
+            formApartamentos.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show($"Error al abrir la torre {numeroTorre}: {ex.Message}", "Error",
+                      MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub Form_MouseDown(sender As Object, e As MouseEventArgs)
