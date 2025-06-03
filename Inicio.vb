@@ -1,4 +1,7 @@
-﻿Public Class Inicio
+﻿' Software ClikApt 20250603
+
+
+Public Class Inicio
     Private WithEvents btnLogin As New Button()
     Private WithEvents btnSalir As New Button() ' Nuevo botón Salir
     Private txtUsuario As New TextBox()

@@ -335,7 +335,7 @@ Public Class COOPDIASAM
     End Sub
 
     Private Sub Form_MouseDown(sender As Object, e As MouseEventArgs)
-        ' Método más eficiente para detectar clicks fuera del menú
+        ' Método más eficiente para detectar clicks fuera del menú 
         If panelMenu.Visible AndAlso Not panelMenu.Bounds.Contains(PointToClient(Cursor.Position)) Then
             If Not botonMenu.Bounds.Contains(PointToClient(Cursor.Position)) Then
                 panelMenu.Visible = False
