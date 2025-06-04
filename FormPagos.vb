@@ -1,6 +1,8 @@
 ﻿Imports System.Data.SQLite
 Imports System.Windows.Forms
 Imports System.Drawing
+Imports System.IO
+Imports System.Diagnostics
 
 Public Class FormPagos
     Inherits Form
@@ -22,7 +24,7 @@ Public Class FormPagos
     Private Sub InitializeComponent()
         ' Configuración del formulario
         Me.Text = $"Registro de Pagos - Torre {numeroTorre}"
-        Me.Size = New Size(1400, 700)
+        Me.Size = New Size(1450, 700) ' Aumentado para los botones
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
         Me.MaximizeBox = False
@@ -143,9 +145,9 @@ Public Class FormPagos
         }
         panelPadre.Controls.Add(panelEncabezados)
 
-        ' Definir anchos de columnas (deben coincidir con ConfigurarColumnas)
-        Dim anchos() As Integer = {100, 100, 120, 120, 120, 150, 100, 100, 120, 130}
-        Dim titulos() As String = {"APARTAMENTO", "FECHA PAGO", "SALDO ANT.", "PAGO ADMIN", "PAGO INTER", "OBSERVAC.", "TOTAL", "INTERESES", "TOTAL GRAL", "No. RECIBO"}
+        ' Definir anchos de columnas (actualizados para incluir columnas de botones)
+        Dim anchos() As Integer = {100, 100, 120, 120, 120, 150, 100, 100, 120, 130, 50, 50}
+        Dim titulos() As String = {"APARTAMENTO", "FECHA PAGO", "SALDO ANT.", "PAGO ADMIN", "PAGO INTER", "OBSERVAC.", "TOTAL", "INTERESES", "TOTAL GRAL", "No. RECIBO", "✉", "PDF"}
 
         Dim xPos As Integer = 0
         For i As Integer = 0 To titulos.Length - 1
@@ -208,9 +210,178 @@ Public Class FormPagos
         ' Columna oculta para ID
         dgvPagos.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "IdApartamento", .Visible = False})
 
+        ' Agregar columnas de botones
+        Dim colBotonCorreo As New DataGridViewButtonColumn With {
+            .Name = "BtnCorreo",
+            .HeaderText = "✉",
+            .Text = "✉",
+            .UseColumnTextForButtonValue = True,
+            .Width = 50,
+            .DefaultCellStyle = New DataGridViewCellStyle With {
+                .BackColor = Color.FromArgb(52, 152, 219),
+                .ForeColor = Color.White,
+                .Font = New Font("Segoe UI", 12, FontStyle.Bold)
+            }
+        }
+        dgvPagos.Columns.Add(colBotonCorreo)
+
+        Dim colBotonPDF As New DataGridViewButtonColumn With {
+            .Name = "BtnPDF",
+            .HeaderText = "PDF",
+            .Text = "PDF",
+            .UseColumnTextForButtonValue = True,
+            .Width = 50,
+            .DefaultCellStyle = New DataGridViewCellStyle With {
+                .BackColor = Color.FromArgb(231, 76, 60),
+                .ForeColor = Color.White,
+                .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+            }
+        }
+        dgvPagos.Columns.Add(colBotonPDF)
+
         ' Eventos
         AddHandler dgvPagos.CellValueChanged, AddressOf dgvPagos_CellValueChanged
         AddHandler dgvPagos.CellEndEdit, AddressOf dgvPagos_CellEndEdit
+        AddHandler dgvPagos.CellClick, AddressOf dgvPagos_CellClick
+        AddHandler dgvPagos.CellPainting, AddressOf dgvPagos_CellPainting
+    End Sub
+
+    Private Sub dgvPagos_CellClick(sender As Object, e As DataGridViewCellEventArgs)
+        If e.RowIndex >= 0 Then
+            Dim row As DataGridViewRow = dgvPagos.Rows(e.RowIndex)
+
+            ' Verificar si la fila tiene número de recibo generado
+            Dim numeroRecibo As String = ObtenerValorCelda(row.Cells("NumeroRecibo").Value)
+
+            If String.IsNullOrEmpty(numeroRecibo) Then
+                MessageBox.Show("Debe registrar el pago primero para generar el recibo.",
+                              "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+
+            ' Obtener datos del apartamento
+            Dim idApartamento As Integer = Convert.ToInt32(row.Cells("IdApartamento").Value)
+            Dim apartamento As Apartamento = Nothing
+
+            For Each apt In apartamentos
+                If apt.IdApartamento = idApartamento Then
+                    apartamento = apt
+                    Exit For
+                End If
+            Next
+
+            If apartamento Is Nothing Then Return
+
+            ' Crear objeto PagoModel con los datos de la fila
+            Dim pago As New PagoModel With {
+                .IdApartamento = idApartamento,
+                .NumeroRecibo = numeroRecibo,
+                .FechaPago = DateTime.Parse(row.Cells("FechaPago").Value.ToString()),
+                .SaldoAnterior = ConvertirADecimal(row.Cells("SaldoAnterior").Value),
+                .PagoAdministracion = ConvertirADecimal(row.Cells("PagoAdministracion").Value),
+                .PagoIntereses = ConvertirADecimal(row.Cells("PagoInteres").Value),
+                .TotalPagado = ConvertirADecimal(row.Cells("Total").Value),
+                .SaldoActual = ConvertirADecimal(row.Cells("SaldoAnterior").Value) - ConvertirADecimal(row.Cells("Total").Value),
+                .Observaciones = ObtenerValorCelda(row.Cells("Observaciones").Value),
+                .MatriculaInmobiliaria = PagosDAL.ObtenerMatriculaInmobiliaria(idApartamento)
+            }
+            pago.CuotaActual = pago.PagoAdministracion
+
+            ' Procesar según el botón clickeado
+            If dgvPagos.Columns(e.ColumnIndex).Name = "BtnCorreo" Then
+                ProcesarEnvioCorreo(pago, apartamento)
+            ElseIf dgvPagos.Columns(e.ColumnIndex).Name = "BtnPDF" Then
+                ProcesarGeneracionPDF(pago, apartamento)
+            End If
+        End If
+    End Sub
+
+    Private Sub ProcesarEnvioCorreo(pago As PagoModel, apartamento As Apartamento)
+        Try
+            ' Verificar si el apartamento tiene correo
+            If String.IsNullOrEmpty(apartamento.Correo) Then
+                MessageBox.Show("No se encuentra el correo en la base de datos. " & vbCrLf &
+                              "Por favor actualice la información en la sección de Propietarios.",
+                              "Correo no encontrado", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Mostrar mensaje de confirmación
+            Dim mensaje As String = $"¿Enviar recibo por correo a {apartamento.Correo}?"
+            If MessageBox.Show(mensaje, "Confirmar envío", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+
+                Me.Cursor = Cursors.WaitCursor
+
+                ' Generar PDF temporal
+                Dim rutaPDF As String = ReciboPDF.GenerarReciboDesdeFormulario(pago, apartamento)
+
+                If Not String.IsNullOrEmpty(rutaPDF) Then
+                    ' Enviar por correo
+                    If EmailService.EnviarReciboPorCorreo(pago, apartamento, rutaPDF) Then
+                        MessageBox.Show($"Recibo enviado correctamente a {apartamento.Correo}",
+                                      "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    Else
+                        MessageBox.Show("Error al enviar el correo. Verifique la configuración SMTP.",
+                                      "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    End If
+
+                    ' Eliminar PDF temporal
+                    Try
+                        File.Delete(rutaPDF)
+                    Catch
+                    End Try
+                End If
+
+                Me.Cursor = Cursors.Default
+            End If
+
+        Catch ex As Exception
+            Me.Cursor = Cursors.Default
+            MessageBox.Show($"Error al enviar correo: {ex.Message}", "Error",
+                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub ProcesarGeneracionPDF(pago As PagoModel, apartamento As Apartamento)
+        Try
+            Me.Cursor = Cursors.WaitCursor
+
+            ' Generar PDF
+            Dim rutaPDF As String = ReciboPDF.GenerarReciboDesdeFormulario(pago, apartamento)
+
+            If Not String.IsNullOrEmpty(rutaPDF) Then
+                ' Preguntar si desea abrir el PDF
+                Dim mensaje As String = $"PDF generado correctamente en:{vbCrLf}{rutaPDF}{vbCrLf}{vbCrLf}¿Desea abrir el archivo?"
+
+                If MessageBox.Show(mensaje, "PDF Generado", MessageBoxButtons.YesNo, MessageBoxIcon.Information) = DialogResult.Yes Then
+                    Process.Start(New ProcessStartInfo(rutaPDF) With {.UseShellExecute = True})
+                End If
+            End If
+
+            Me.Cursor = Cursors.Default
+
+        Catch ex As Exception
+            Me.Cursor = Cursors.Default
+            MessageBox.Show($"Error al generar PDF: {ex.Message}", "Error",
+                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub dgvPagos_CellPainting(sender As Object, e As DataGridViewCellPaintingEventArgs)
+        ' Pintar los botones solo si hay número de recibo
+        If e.RowIndex >= 0 AndAlso (e.ColumnIndex = dgvPagos.Columns("BtnCorreo").Index Or
+                                     e.ColumnIndex = dgvPagos.Columns("BtnPDF").Index) Then
+
+            Dim row As DataGridViewRow = dgvPagos.Rows(e.RowIndex)
+            Dim numeroRecibo As String = ObtenerValorCelda(row.Cells("NumeroRecibo").Value)
+
+            If String.IsNullOrEmpty(numeroRecibo) Then
+                ' Pintar celda deshabilitada
+                e.Graphics.FillRectangle(New SolidBrush(Color.FromArgb(230, 230, 230)), e.CellBounds)
+                e.Graphics.DrawRectangle(New Pen(Color.FromArgb(200, 200, 200)), e.CellBounds)
+                e.Handled = True
+            End If
+        End If
     End Sub
 
     Private Sub ConfigurarBotones()
@@ -285,6 +456,8 @@ Public Class FormPagos
                 dgvPagos.Rows(fila).Cells("Total").Value = 0
                 dgvPagos.Rows(fila).Cells("TotalGeneral").Value = 0
                 dgvPagos.Rows(fila).Cells("NumeroRecibo").Value = ""
+
+                ' Botones se muestran automáticamente
             Next
 
         Catch ex As Exception
@@ -439,6 +612,13 @@ Public Class FormPagos
 
                         If PagosDAL.RegistrarPago(pago) Then
                             row.Cells("NumeroRecibo").Value = numeroRecibo
+
+                            ' Colorear la fila de gris para indicar que está registrada
+                            For Each cell As DataGridViewCell In row.Cells
+                                If cell.ColumnIndex < dgvPagos.Columns("BtnCorreo").Index Then
+                                    cell.Style.BackColor = Color.FromArgb(230, 230, 230)
+                                End If
+                            Next
                         End If
                     End If
                 End If
