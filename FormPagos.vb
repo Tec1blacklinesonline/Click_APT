@@ -288,84 +288,84 @@ Public Class FormPagos
             pago.CuotaActual = pago.PagoAdministracion
 
             ' Procesar según el botón clickeado
-            If dgvPagos.Columns(e.ColumnIndex).Name = "BtnCorreo" Then
-                ProcesarEnvioCorreo(pago, apartamento)
-            ElseIf dgvPagos.Columns(e.ColumnIndex).Name = "BtnPDF" Then
-                ProcesarGeneracionPDF(pago, apartamento)
-            End If
+            'If dgvPagos.Columns(e.ColumnIndex).Name = "BtnCorreo" Then
+            '    ProcesarEnvioCorreo(pago, apartamento)
+            'ElseIf dgvPagos.Columns(e.ColumnIndex).Name = "BtnPDF" Then
+            '    ProcesarGeneracionPDF(pago, apartamento)
+            'End If
         End If
     End Sub
 
-    Private Sub ProcesarEnvioCorreo(pago As PagoModel, apartamento As Apartamento)
-        Try
-            ' Verificar si el apartamento tiene correo
-            If String.IsNullOrEmpty(apartamento.Correo) Then
-                MessageBox.Show("No se encuentra el correo en la base de datos. " & vbCrLf &
-                              "Por favor actualice la información en la sección de Propietarios.",
-                              "Correo no encontrado", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Return
-            End If
+    'Private Sub ProcesarEnvioCorreo(pago As PagoModel, apartamento As Apartamento)
+    '    Try
+    '        ' Verificar si el apartamento tiene correo
+    '        If String.IsNullOrEmpty(apartamento.Correo) Then
+    '            MessageBox.Show("No se encuentra el correo en la base de datos. " & vbCrLf &
+    '                          "Por favor actualice la información en la sección de Propietarios.",
+    '                          "Correo no encontrado", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+    '            Return
+    '        End If
 
-            ' Mostrar mensaje de confirmación
-            Dim mensaje As String = $"¿Enviar recibo por correo a {apartamento.Correo}?"
-            If MessageBox.Show(mensaje, "Confirmar envío", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+    '        ' Mostrar mensaje de confirmación
+    '        Dim mensaje As String = $"¿Enviar recibo por correo a {apartamento.Correo}?"
+    '        If MessageBox.Show(mensaje, "Confirmar envío", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
 
-                Me.Cursor = Cursors.WaitCursor
+    '            Me.Cursor = Cursors.WaitCursor
 
-                ' Generar PDF temporal
-                Dim rutaPDF As String = ReciboPDF.GenerarReciboDesdeFormulario(pago, apartamento)
+    '            ' Generar PDF temporal
+    '            Dim rutaPDF As String = ReciboPDF.GenerarReciboDesdeFormulario(pago, apartamento)
 
-                If Not String.IsNullOrEmpty(rutaPDF) Then
-                    ' Enviar por correo
-                    If EmailService.EnviarReciboPorCorreo(pago, apartamento, rutaPDF) Then
-                        MessageBox.Show($"Recibo enviado correctamente a {apartamento.Correo}",
-                                      "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                    Else
-                        MessageBox.Show("Error al enviar el correo. Verifique la configuración SMTP.",
-                                      "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                    End If
+    '            If Not String.IsNullOrEmpty(rutaPDF) Then
+    '                ' Enviar por correo
+    '                If EmailService.EnviarReciboPorCorreo(pago, apartamento, rutaPDF) Then
+    '                    MessageBox.Show($"Recibo enviado correctamente a {apartamento.Correo}",
+    '                                  "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information)
+    '                Else
+    '                    MessageBox.Show("Error al enviar el correo. Verifique la configuración SMTP.",
+    '                                  "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+    '                End If
 
-                    ' Eliminar PDF temporal
-                    Try
-                        File.Delete(rutaPDF)
-                    Catch
-                    End Try
-                End If
+    '                ' Eliminar PDF temporal
+    '                Try
+    '                    File.Delete(rutaPDF)
+    '                Catch
+    '                End Try
+    '            End If
 
-                Me.Cursor = Cursors.Default
-            End If
+    '            Me.Cursor = Cursors.Default
+    '        End If
 
-        Catch ex As Exception
-            Me.Cursor = Cursors.Default
-            MessageBox.Show($"Error al enviar correo: {ex.Message}", "Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
-    End Sub
+    '    Catch ex As Exception
+    '        Me.Cursor = Cursors.Default
+    '        MessageBox.Show($"Error al enviar correo: {ex.Message}", "Error",
+    '                      MessageBoxButtons.OK, MessageBoxIcon.Error)
+    '    End Try
+    'End Sub
 
-    Private Sub ProcesarGeneracionPDF(pago As PagoModel, apartamento As Apartamento)
-        Try
-            Me.Cursor = Cursors.WaitCursor
+    'Private Sub ProcesarGeneracionPDF(pago As PagoModel, apartamento As Apartamento)
+    '    Try
+    '        Me.Cursor = Cursors.WaitCursor
 
-            ' Generar PDF
-            Dim rutaPDF As String = ReciboPDF.GenerarReciboDesdeFormulario(pago, apartamento)
+    '        ' Generar PDF
+    '        Dim rutaPDF As String = ReciboPDF.GenerarReciboDesdeFormulario(pago, apartamento)
 
-            If Not String.IsNullOrEmpty(rutaPDF) Then
-                ' Preguntar si desea abrir el PDF
-                Dim mensaje As String = $"PDF generado correctamente en:{vbCrLf}{rutaPDF}{vbCrLf}{vbCrLf}¿Desea abrir el archivo?"
+    '        If Not String.IsNullOrEmpty(rutaPDF) Then
+    '            ' Preguntar si desea abrir el PDF
+    '            Dim mensaje As String = $"PDF generado correctamente en:{vbCrLf}{rutaPDF}{vbCrLf}{vbCrLf}¿Desea abrir el archivo?"
 
-                If MessageBox.Show(mensaje, "PDF Generado", MessageBoxButtons.YesNo, MessageBoxIcon.Information) = DialogResult.Yes Then
-                    Process.Start(New ProcessStartInfo(rutaPDF) With {.UseShellExecute = True})
-                End If
-            End If
+    '            If MessageBox.Show(mensaje, "PDF Generado", MessageBoxButtons.YesNo, MessageBoxIcon.Information) = DialogResult.Yes Then
+    '                Process.Start(New ProcessStartInfo(rutaPDF) With {.UseShellExecute = True})
+    '            End If
+    '        End If
 
-            Me.Cursor = Cursors.Default
+    '        Me.Cursor = Cursors.Default
 
-        Catch ex As Exception
-            Me.Cursor = Cursors.Default
-            MessageBox.Show($"Error al generar PDF: {ex.Message}", "Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
-    End Sub
+    '    Catch ex As Exception
+    '        Me.Cursor = Cursors.Default
+    '        MessageBox.Show($"Error al generar PDF: {ex.Message}", "Error",
+    '                      MessageBoxButtons.OK, MessageBoxIcon.Error)
+    '    End Try
+    'End Sub
 
     Private Sub dgvPagos_CellPainting(sender As Object, e As DataGridViewCellPaintingEventArgs)
         ' Pintar los botones solo si hay número de recibo
