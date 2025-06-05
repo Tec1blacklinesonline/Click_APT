@@ -21,7 +21,7 @@ Public Class COOPDIASAM
 
     Private Sub COOPDIASAM_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Ajustes de la ventana
-        Me.Text = "CONJUNTO RESIDENCIAL COOPDIASAMA"
+        Me.Text = "CONJUNTO RESIDENCIAL COOPDIASAM"
         Me.Size = New Size(1200, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
