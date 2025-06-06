@@ -5,12 +5,17 @@ Imports System.Windows.Forms
 Imports BCrypt.Net
 
 Public Class ConexionBD
-    ' 🔒 Cadena de conexión a la base de datos SQLite local - H
+    ' 🔒 Cadena de conexión a la base de datos SQLite local
     Private Shared ReadOnly cadenaConexion As String = "Data Source=C:\Users\DELL\Dropbox\BD_COOPDIASAM\CONJUNTO_2025.db;Version=3;"
 
     ' 🌐 Retorna un objeto SQLiteConnection
     Public Shared Function ObtenerConexion() As SQLiteConnection
         Return New SQLiteConnection(cadenaConexion)
+    End Function
+
+    ' 🔄 Retorna la cadena de conexión
+    Public Shared Function ObtenerCadenaConexion() As String
+        Return cadenaConexion
     End Function
 
     ' 🔄 Prueba si hay conexión a la base de datos
@@ -26,7 +31,7 @@ Public Class ConexionBD
         End Try
     End Function
 
-    ' 🔐 Genera el hash SHA256 de un texto (mantenemos esta función igual)
+    ' 🔐 Genera el hash SHA256 de un texto
     Public Shared Function GenerarHashSHA256(texto As String) As String
         Using sha256 As SHA256 = SHA256.Create()
             Dim bytes As Byte() = Encoding.UTF8.GetBytes(texto)
@@ -35,11 +40,7 @@ Public Class ConexionBD
         End Using
     End Function
 
-
-
-
-
-
+    ' 🔑 Valida las credenciales del usuario usando bcrypt
     Public Shared Function ValidarUsuario(usuario As String, contrasena As String) As Boolean
         Try
             Using conexion As SQLiteConnection = ObtenerConexion()
@@ -63,9 +64,11 @@ Public Class ConexionBD
 
         Return False
     End Function
+End Class
 
-
-
-
-
+' Alias para compatibilidad con clases anteriores
+Public Class ConexionDB
+    Public Shared Function ObtenerCadenaConexion() As String
+        Return ConexionBD.ObtenerCadenaConexion()
+    End Function
 End Class
