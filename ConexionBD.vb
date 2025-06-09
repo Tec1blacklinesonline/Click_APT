@@ -1,21 +1,17 @@
 ﻿Imports System.Data.SQLite
+Imports System.Configuration
 Imports System.Security.Cryptography
 Imports System.Text
 Imports System.Windows.Forms
 Imports BCrypt.Net
 
 Public Class ConexionBD
-    ' 🔒 Cadena de conexión a la base de datos SQLite local
-    Private Shared ReadOnly cadenaConexion As String = "Data Source=C:\Users\DELL\Dropbox\BD_COOPDIASAM\CONJUNTO_2025.db;Version=3;"
+    ' 🔄 Obtiene la cadena de conexión desde App.config
+    Private Shared ReadOnly cadenaConexion As String = ConfigurationManager.ConnectionStrings("MiConexionSQLite").ConnectionString
 
     ' 🌐 Retorna un objeto SQLiteConnection
     Public Shared Function ObtenerConexion() As SQLiteConnection
         Return New SQLiteConnection(cadenaConexion)
-    End Function
-
-    ' 🔄 Retorna la cadena de conexión
-    Public Shared Function ObtenerCadenaConexion() As String
-        Return cadenaConexion
     End Function
 
     ' 🔄 Prueba si hay conexión a la base de datos
@@ -40,7 +36,7 @@ Public Class ConexionBD
         End Using
     End Function
 
-    ' 🔑 Valida las credenciales del usuario usando bcrypt
+    ' 👤 Valida el usuario con su contraseña
     Public Shared Function ValidarUsuario(usuario As String, contrasena As String) As Boolean
         Try
             Using conexion As SQLiteConnection = ObtenerConexion()
@@ -63,12 +59,5 @@ Public Class ConexionBD
         End Try
 
         Return False
-    End Function
-End Class
-
-' Alias para compatibilidad con clases anteriores
-Public Class ConexionDB
-    Public Shared Function ObtenerCadenaConexion() As String
-        Return ConexionBD.ObtenerCadenaConexion()
     End Function
 End Class

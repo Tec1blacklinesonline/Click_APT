@@ -41,6 +41,7 @@ Public Class ApartamentoDAL
                                 .NombreResidente = If(IsDBNull(reader("nombre_residente")), "", reader("nombre_residente").ToString()),
                                 .Telefono = If(IsDBNull(reader("telefono")), "", reader("telefono").ToString()),
                                 .Correo = If(IsDBNull(reader("correo")), "", reader("correo").ToString()),
+                                .MatriculaInmobiliaria = If(IsDBNull(reader("matricula_inmobiliaria")), "", reader("matricula_inmobiliaria").ToString()),
                                 .Activo = True,
                                 .SaldoActual = If(IsDBNull(reader("saldo_actual")), 0D, Convert.ToDecimal(reader("saldo_actual")))
                             }
@@ -128,26 +129,68 @@ Public Class ApartamentoDAL
         Return resumen
     End Function
 
-    ' Método para actualizar información del propietario
+    ' Método MEJORADO para actualizar información del propietario
     Public Shared Function ActualizarPropietario(apartamento As Apartamento) As Boolean
+        If apartamento Is Nothing Then
+            Throw New ArgumentNullException("apartamento", "El objeto apartamento no puede ser nulo")
+        End If
+
+        If apartamento.IdApartamento <= 0 Then
+            Throw New ArgumentException("El ID del apartamento debe ser válido")
+        End If
+
         Try
             Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
                 conexion.Open()
 
-                Dim consulta As String = "
-                    UPDATE Apartamentos 
-                    SET nombre_residente = @nombre,
-                        telefono = @telefono,
-                        correo = @correo
-                    WHERE id_apartamentos = @id"
+                ' Iniciar transacción para asegurar consistencia
+                Using transaccion As SQLiteTransaction = conexion.BeginTransaction()
+                    Try
+                        ' Verificar que el apartamento existe
+                        Dim consultaExiste As String = "SELECT COUNT(*) FROM Apartamentos WHERE id_apartamentos = @id"
+                        Using comandoExiste As New SQLiteCommand(consultaExiste, conexion, transaccion)
+                            comandoExiste.Parameters.AddWithValue("@id", apartamento.IdApartamento)
+                            Dim existe As Integer = Convert.ToInt32(comandoExiste.ExecuteScalar())
 
-                Using comando As New SQLiteCommand(consulta, conexion)
-                    comando.Parameters.AddWithValue("@nombre", If(String.IsNullOrEmpty(apartamento.NombreResidente), DBNull.Value, CObj(apartamento.NombreResidente)))
-                    comando.Parameters.AddWithValue("@telefono", If(String.IsNullOrEmpty(apartamento.Telefono), DBNull.Value, CObj(apartamento.Telefono)))
-                    comando.Parameters.AddWithValue("@correo", If(String.IsNullOrEmpty(apartamento.Correo), DBNull.Value, CObj(apartamento.Correo)))
-                    comando.Parameters.AddWithValue("@id", apartamento.IdApartamento)
+                            If existe = 0 Then
+                                Throw New Exception($"No existe un apartamento con ID {apartamento.IdApartamento}")
+                            End If
+                        End Using
 
-                    Return comando.ExecuteNonQuery() > 0
+                        ' Actualizar información del propietario
+                        Dim consulta As String = "
+                            UPDATE Apartamentos 
+                            SET nombre_residente = @nombre,
+                                telefono = @telefono,
+                                correo = @correo,
+                                matricula_inmobiliaria = @matricula
+                            WHERE id_apartamentos = @id"
+
+                        Using comando As New SQLiteCommand(consulta, conexion, transaccion)
+                            comando.Parameters.AddWithValue("@nombre", If(String.IsNullOrWhiteSpace(apartamento.NombreResidente), DBNull.Value, CObj(apartamento.NombreResidente.Trim())))
+                            comando.Parameters.AddWithValue("@telefono", If(String.IsNullOrWhiteSpace(apartamento.Telefono), DBNull.Value, CObj(apartamento.Telefono.Trim())))
+                            comando.Parameters.AddWithValue("@correo", If(String.IsNullOrWhiteSpace(apartamento.Correo), DBNull.Value, CObj(apartamento.Correo.Trim())))
+                            comando.Parameters.AddWithValue("@matricula", If(String.IsNullOrWhiteSpace(apartamento.MatriculaInmobiliaria), DBNull.Value, CObj(apartamento.MatriculaInmobiliaria.Trim())))
+                            comando.Parameters.AddWithValue("@id", apartamento.IdApartamento)
+
+                            Dim filasAfectadas As Integer = comando.ExecuteNonQuery()
+
+                            If filasAfectadas > 0 Then
+                                ' Confirmar transacción
+                                transaccion.Commit()
+                                Return True
+                            Else
+                                ' Rollback si no se actualizó ninguna fila
+                                transaccion.Rollback()
+                                Return False
+                            End If
+                        End Using
+
+                    Catch ex As Exception
+                        ' Rollback en caso de error
+                        transaccion.Rollback()
+                        Throw
+                    End Try
                 End Using
             End Using
 
@@ -156,7 +199,7 @@ Public Class ApartamentoDAL
         End Try
     End Function
 
-    ' Método para obtener todos los apartamentos
+    ' Método para obtener todos los apartamentos (CORREGIDO PARA TU BD)
     Public Shared Function ObtenerTodosLosApartamentos() As List(Of Apartamento)
         Dim apartamentos As New List(Of Apartamento)
 
@@ -192,13 +235,18 @@ Public Class ApartamentoDAL
                                 .NombreResidente = If(IsDBNull(reader("nombre_residente")), "", reader("nombre_residente").ToString()),
                                 .Telefono = If(IsDBNull(reader("telefono")), "", reader("telefono").ToString()),
                                 .Correo = If(IsDBNull(reader("correo")), "", reader("correo").ToString()),
+                                .MatriculaInmobiliaria = If(IsDBNull(reader("matricula_inmobiliaria")), "", reader("matricula_inmobiliaria").ToString()),
                                 .Activo = True,
+                                .FechaRegistro = DateTime.Now,
                                 .SaldoActual = If(IsDBNull(reader("saldo_actual")), 0D, Convert.ToDecimal(reader("saldo_actual")))
                             }
 
+                            ' Asignar fecha del último pago si existe
                             If Not IsDBNull(reader("ultimo_pago")) Then
                                 apartamento.UltimoPago = Convert.ToDateTime(reader("ultimo_pago"))
                                 apartamento.TieneUltimoPago = True
+                            Else
+                                apartamento.TieneUltimoPago = False
                             End If
 
                             apartamentos.Add(apartamento)
@@ -208,17 +256,35 @@ Public Class ApartamentoDAL
             End Using
 
         Catch ex As Exception
-            Throw New Exception($"Error al obtener apartamentos: {ex.Message}")
+            MessageBox.Show($"Error al obtener todos los apartamentos: {ex.Message}", "Error de Datos", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return New List(Of Apartamento)() ' Retornar lista vacía en caso de error
         End Try
 
         Return apartamentos
     End Function
 
-    ' Método para crear un nuevo apartamento
+    ' Método para crear un nuevo apartamento (CORREGIDO PARA TU BD)
     Public Shared Function CrearApartamento(apartamento As Apartamento) As Integer
+        If apartamento Is Nothing Then
+            Throw New ArgumentNullException("apartamento", "El objeto apartamento no puede ser nulo")
+        End If
+
         Try
             Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
                 conexion.Open()
+
+                ' Verificar que no exista ya un apartamento con el mismo número en la misma torre y piso
+                Dim consultaExiste As String = "SELECT COUNT(*) FROM Apartamentos WHERE id_torre = @torre AND id_piso = @piso AND numero_apartamento = @numero"
+                Using comandoExiste As New SQLiteCommand(consultaExiste, conexion)
+                    comandoExiste.Parameters.AddWithValue("@torre", apartamento.Torre)
+                    comandoExiste.Parameters.AddWithValue("@piso", apartamento.Piso)
+                    comandoExiste.Parameters.AddWithValue("@numero", apartamento.NumeroApartamento)
+
+                    Dim existe As Integer = Convert.ToInt32(comandoExiste.ExecuteScalar())
+                    If existe > 0 Then
+                        Throw New Exception($"Ya existe un apartamento {apartamento.NumeroApartamento} en la Torre {apartamento.Torre}, Piso {apartamento.Piso}")
+                    End If
+                End Using
 
                 Dim consulta As String = "
                     INSERT INTO Apartamentos (id_torre, id_piso, numero_apartamento, nombre_residente, telefono, correo, matricula_inmobiliaria)
@@ -229,10 +295,10 @@ Public Class ApartamentoDAL
                     comando.Parameters.AddWithValue("@torre", apartamento.Torre)
                     comando.Parameters.AddWithValue("@piso", apartamento.Piso)
                     comando.Parameters.AddWithValue("@numero", apartamento.NumeroApartamento)
-                    comando.Parameters.AddWithValue("@nombre", If(String.IsNullOrEmpty(apartamento.NombreResidente), DBNull.Value, CObj(apartamento.NombreResidente)))
-                    comando.Parameters.AddWithValue("@telefono", If(String.IsNullOrEmpty(apartamento.Telefono), DBNull.Value, CObj(apartamento.Telefono)))
-                    comando.Parameters.AddWithValue("@correo", If(String.IsNullOrEmpty(apartamento.Correo), DBNull.Value, CObj(apartamento.Correo)))
-                    comando.Parameters.AddWithValue("@matricula", DBNull.Value) ' Puedes calcular esto según tu lógica
+                    comando.Parameters.AddWithValue("@nombre", If(String.IsNullOrWhiteSpace(apartamento.NombreResidente), DBNull.Value, CObj(apartamento.NombreResidente.Trim())))
+                    comando.Parameters.AddWithValue("@telefono", If(String.IsNullOrWhiteSpace(apartamento.Telefono), DBNull.Value, CObj(apartamento.Telefono.Trim())))
+                    comando.Parameters.AddWithValue("@correo", If(String.IsNullOrWhiteSpace(apartamento.Correo), DBNull.Value, CObj(apartamento.Correo.Trim())))
+                    comando.Parameters.AddWithValue("@matricula", If(String.IsNullOrWhiteSpace(apartamento.MatriculaInmobiliaria), DBNull.Value, CObj(apartamento.MatriculaInmobiliaria.Trim())))
 
                     Return Convert.ToInt32(comando.ExecuteScalar())
                 End Using
@@ -287,6 +353,7 @@ Public Class ApartamentoDAL
                                 .NombreResidente = If(IsDBNull(reader("nombre_residente")), "", reader("nombre_residente").ToString()),
                                 .Telefono = If(IsDBNull(reader("telefono")), "", reader("telefono").ToString()),
                                 .Correo = If(IsDBNull(reader("correo")), "", reader("correo").ToString()),
+                                .MatriculaInmobiliaria = If(IsDBNull(reader("matricula_inmobiliaria")), "", reader("matricula_inmobiliaria").ToString()),
                                 .Activo = True,
                                 .SaldoActual = If(IsDBNull(reader("saldo_actual")), 0D, Convert.ToDecimal(reader("saldo_actual")))
                             }
@@ -332,6 +399,96 @@ Public Class ApartamentoDAL
 
         Catch ex As Exception
             Return 0
+        End Try
+    End Function
+
+    ' Obtiene un objeto Apartamento completo por su Id (MEJORADO)
+    Public Shared Function ObtenerApartamentoPorId(idApartamento As Integer) As Apartamento
+        If idApartamento <= 0 Then
+            Throw New ArgumentException("El ID del apartamento debe ser mayor a 0")
+        End If
+
+        Dim apartamento As Apartamento = Nothing
+        Try
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
+                Dim consulta As String = "
+                    SELECT 
+                        a.id_apartamentos,
+                        a.id_torre,
+                        a.id_piso,
+                        a.numero_apartamento,
+                        a.nombre_residente,
+                        a.telefono,
+                        a.correo,
+                        a.matricula_inmobiliaria,
+                        COALESCE(p.saldo_actual, 0) as saldo_actual
+                    FROM Apartamentos a
+                    LEFT JOIN pagos p ON a.id_apartamentos = p.id_apartamentos
+                    WHERE a.id_apartamentos = @idApartamento 
+                    ORDER BY p.fecha_pago DESC
+                    LIMIT 1"
+
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@idApartamento", idApartamento)
+                    Using reader As SQLiteDataReader = comando.ExecuteReader()
+                        If reader.Read() Then
+                            apartamento = New Apartamento()
+                            apartamento.IdApartamento = Convert.ToInt32(reader("id_apartamentos"))
+                            apartamento.Torre = Convert.ToInt32(reader("id_torre"))
+                            apartamento.Piso = Convert.ToInt32(reader("id_piso"))
+                            apartamento.NumeroApartamento = reader("numero_apartamento").ToString()
+                            apartamento.MatriculaInmobiliaria = If(reader("matricula_inmobiliaria") Is DBNull.Value, "", reader("matricula_inmobiliaria").ToString())
+                            apartamento.NombreResidente = If(reader("nombre_residente") Is DBNull.Value, String.Empty, reader("nombre_residente").ToString())
+                            apartamento.Correo = If(reader("correo") Is DBNull.Value, String.Empty, reader("correo").ToString())
+                            apartamento.Telefono = If(reader("telefono") Is DBNull.Value, String.Empty, reader("telefono").ToString())
+                            apartamento.SaldoActual = If(IsDBNull(reader("saldo_actual")), 0D, Convert.ToDecimal(reader("saldo_actual")))
+                            apartamento.Activo = True
+                        End If
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            Throw New Exception($"Error al obtener apartamento por ID {idApartamento}: {ex.Message}")
+        End Try
+        Return apartamento
+    End Function
+
+    ' Obtener total de intereses calculados
+    Public Shared Function ObtenerTotalInteresesCalculados(idApartamento As Integer) As Decimal
+        Dim totalIntereses As Decimal = 0D
+        Try
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
+                Dim consulta As String = "SELECT COALESCE(SUM(valor_interes), 0) FROM calculos_interes WHERE id_apartamentos = @idApartamento AND pagado = 0"
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@idApartamento", idApartamento)
+                    Dim resultado = comando.ExecuteScalar()
+                    If resultado IsNot Nothing AndAlso Not IsDBNull(resultado) Then
+                        totalIntereses = Convert.ToDecimal(resultado)
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            ' En caso de error, retornar 0
+            totalIntereses = 0D
+        End Try
+        Return totalIntereses
+    End Function
+
+    ' Método para validar si un apartamento existe
+    Public Shared Function ExisteApartamento(idApartamento As Integer) As Boolean
+        Try
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
+                Dim consulta As String = "SELECT COUNT(*) FROM Apartamentos WHERE id_apartamentos = @id"
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@id", idApartamento)
+                    Return Convert.ToInt32(comando.ExecuteScalar()) > 0
+                End Using
+            End Using
+        Catch ex As Exception
+            Return False
         End Try
     End Function
 

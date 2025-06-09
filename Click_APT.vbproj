@@ -10,6 +10,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="imagenes\firma_administrador.png" />
+    <None Remove="imagenes\logo_coopdiasam.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="imagenes\firma_administrador.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="imagenes\logo_coopdiasam.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <Import Include="System.Data" />
     <Import Include="System.Drawing" />
     <Import Include="System.Windows.Forms" />

@@ -319,28 +319,13 @@ Public Class COOPDIASAM
     End Sub
 
     Private Sub MostrarSeccionPropietarios()
-        ' Limpiar panel
-        panelContenido.Controls.Clear()
-
-        ' Título de sección
-        Dim lblSeccion As New Label With {
-            .Text = "GESTIÓN DE PROPIETARIOS",
-            .Font = New Font("Segoe UI", 14, FontStyle.Bold),
-            .ForeColor = colorMenu,
-            .AutoSize = True,
-            .Location = New Point(20, 20)
-        }
-        panelContenido.Controls.Add(lblSeccion)
-
-        ' Mensaje temporal
-        Dim lblMensaje As New Label With {
-            .Text = "Sección en desarrollo..." & Environment.NewLine & "Aquí se mostrará la gestión de propietarios",
-            .Font = New Font("Segoe UI", 12),
-            .ForeColor = Color.Gray,
-            .Location = New Point(20, 80),
-            .Size = New Size(400, 60)
-        }
-        panelContenido.Controls.Add(lblMensaje)
+        Try
+            ' Intenta con el namespace completo
+            Dim formPropietarios As New FormPropietarios()
+            formPropietarios.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show($"Error al abrir el formulario de propietarios: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub MostrarSeccionPagos()

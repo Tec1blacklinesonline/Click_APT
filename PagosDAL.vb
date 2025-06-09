@@ -1,148 +1,395 @@
 ﻿Imports System.Data.SQLite
 
 Public Class PagosDAL
-    Public Shared Function ObtenerUltimoSaldo(idApartamento As Integer) As Decimal
+
+    ' Método para registrar un nuevo pago
+    Public Shared Function RegistrarPago(pago As PagoModel) As Boolean
         Try
-            Using conn As New SQLiteConnection(ConexionDB.ObtenerCadenaConexion())
-                conn.Open()
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
 
-                Dim query As String = "SELECT SaldoActual FROM Pagos WHERE IdApartamento = @id ORDER BY FechaPago DESC, IdPago DESC LIMIT 1"
+                Using transaccion As SQLiteTransaction = conexion.BeginTransaction()
+                    Try
+                        ' Insertar en tabla pagos
+                        Dim consultaInsert As String = "
+                            INSERT INTO pagos (
+                                id_apartamentos, 
+                                matricula_inmobiliaria, 
+                                id_cuota, 
+                                fecha_pago, 
+                                numero_recibo, 
+                                saldo_anterior, 
+                                vr_pagado_administracion, 
+                                vr_pagado_intereses, 
+                                cuota_actual, 
+                                total_pagado, 
+                                saldo_actual, 
+                                detalle, 
+                                observacion
+                            ) VALUES (
+                                @idApartamento, 
+                                @matricula, 
+                                @idCuota, 
+                                @fechaPago, 
+                                @numeroRecibo, 
+                                @saldoAnterior, 
+                                @pagoAdmin, 
+                                @pagoInteres, 
+                                @cuotaActual, 
+                                @totalPagado, 
+                                @saldoFinal, 
+                                @detalle, 
+                                @observaciones
+                            )"
 
-                Using cmd As New SQLiteCommand(query, conn)
-                    cmd.Parameters.AddWithValue("@id", idApartamento)
+                        Using comando As New SQLiteCommand(consultaInsert, conexion, transaccion)
+                            comando.Parameters.AddWithValue("@idApartamento", pago.IdApartamento)
+                            comando.Parameters.AddWithValue("@matricula", pago.MatriculaInmobiliaria)
+                            comando.Parameters.AddWithValue("@idCuota", If(pago.IdCuota.HasValue, CObj(pago.IdCuota.Value), DBNull.Value))
+                            comando.Parameters.AddWithValue("@fechaPago", pago.FechaPago)
+                            comando.Parameters.AddWithValue("@numeroRecibo", pago.NumeroRecibo)
+                            comando.Parameters.AddWithValue("@saldoAnterior", pago.SaldoAnterior)
+                            comando.Parameters.AddWithValue("@pagoAdmin", pago.PagoAdministracion)
+                            comando.Parameters.AddWithValue("@pagoInteres", pago.PagoIntereses)
+                            comando.Parameters.AddWithValue("@cuotaActual", pago.CuotaActual)
+                            comando.Parameters.AddWithValue("@totalPagado", pago.TotalPagado)
+                            comando.Parameters.AddWithValue("@saldoFinal", pago.SaldoActual)
+                            comando.Parameters.AddWithValue("@detalle", If(String.IsNullOrEmpty(pago.Detalle), DBNull.Value, CObj(pago.Detalle)))
+                            comando.Parameters.AddWithValue("@observaciones", If(String.IsNullOrEmpty(pago.Observaciones), DBNull.Value, CObj(pago.Observaciones)))
 
-                    Dim resultado = cmd.ExecuteScalar()
-                    If resultado IsNot Nothing AndAlso Not IsDBNull(resultado) Then
-                        Return Convert.ToDecimal(resultado)
-                    End If
+                            comando.ExecuteNonQuery()
+                        End Using
+
+                        transaccion.Commit()
+                        Return True
+
+                    Catch ex As Exception
+                        transaccion.Rollback()
+                        Throw New Exception($"Error en la transacción: {ex.Message}")
+                    End Try
                 End Using
             End Using
 
-            Return 0
         Catch ex As Exception
-            Throw New Exception($"Error al obtener último saldo: {ex.Message}")
+            Throw New Exception($"Error al registrar pago: {ex.Message}")
         End Try
     End Function
 
-    Public Shared Function ObtenerMatriculaInmobiliaria(idApartamento As Integer) As String
-        Try
-            Using conn As New SQLiteConnection(ConexionDB.ObtenerCadenaConexion())
-                conn.Open()
-
-                Dim query As String = "SELECT MatriculaInmobiliaria FROM Apartamentos WHERE IdApartamento = @id"
-
-                Using cmd As New SQLiteCommand(query, conn)
-                    cmd.Parameters.AddWithValue("@id", idApartamento)
-
-                    Dim resultado = cmd.ExecuteScalar()
-                    If resultado IsNot Nothing AndAlso Not IsDBNull(resultado) Then
-                        Return resultado.ToString()
-                    End If
-                End Using
-            End Using
-
-            Return $"APT{idApartamento}"
-        Catch ex As Exception
-            Return $"APT{idApartamento}"
-        End Try
-    End Function
-
-    Public Shared Function ExisteNumeroRecibo(numeroRecibo As String) As Boolean
-        Try
-            Using conn As New SQLiteConnection(ConexionDB.ObtenerCadenaConexion())
-                conn.Open()
-
-                Dim query As String = "SELECT COUNT(*) FROM Pagos WHERE NumeroRecibo = @numero"
-
-                Using cmd As New SQLiteCommand(query, conn)
-                    cmd.Parameters.AddWithValue("@numero", numeroRecibo)
-
-                    Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
-                    Return count > 0
-                End Using
-            End Using
-        Catch ex As Exception
-            Return False
-        End Try
-    End Function
-
-    Public Shared Function InsertarPago(pago As PagoModel) As Boolean
-        Try
-            Using conn As New SQLiteConnection(ConexionDB.ObtenerCadenaConexion())
-                conn.Open()
-
-                Dim query As String = "INSERT INTO Pagos (IdApartamento, NumeroRecibo, FechaPago, SaldoAnterior, " &
-                                    "PagoAdministracion, PagoIntereses, TotalPagado, SaldoActual, Observaciones, " &
-                                    "MatriculaInmobiliaria, CuotaActual, FechaRegistro) " &
-                                    "VALUES (@idApartamento, @numeroRecibo, @fechaPago, @saldoAnterior, " &
-                                    "@pagoAdmin, @pagoInteres, @totalPagado, @saldoActual, @observaciones, " &
-                                    "@matricula, @cuotaActual, @fechaRegistro)"
-
-                Using cmd As New SQLiteCommand(query, conn)
-                    cmd.Parameters.AddWithValue("@idApartamento", pago.IdApartamento)
-                    cmd.Parameters.AddWithValue("@numeroRecibo", pago.NumeroRecibo)
-                    cmd.Parameters.AddWithValue("@fechaPago", pago.FechaPago)
-                    cmd.Parameters.AddWithValue("@saldoAnterior", pago.SaldoAnterior)
-                    cmd.Parameters.AddWithValue("@pagoAdmin", pago.PagoAdministracion)
-                    cmd.Parameters.AddWithValue("@pagoInteres", pago.PagoIntereses)
-                    cmd.Parameters.AddWithValue("@totalPagado", pago.TotalPagado)
-                    cmd.Parameters.AddWithValue("@saldoActual", pago.SaldoActual)
-                    cmd.Parameters.AddWithValue("@observaciones", If(String.IsNullOrEmpty(pago.Observaciones), "", pago.Observaciones))
-                    cmd.Parameters.AddWithValue("@matricula", pago.MatriculaInmobiliaria)
-                    cmd.Parameters.AddWithValue("@cuotaActual", pago.CuotaActual)
-                    cmd.Parameters.AddWithValue("@fechaRegistro", pago.FechaRegistro)
-
-                    cmd.ExecuteNonQuery()
-                    Return True
-                End Using
-            End Using
-        Catch ex As Exception
-            Throw New Exception($"Error al insertar pago: {ex.Message}")
-        End Try
-    End Function
-
-    Public Shared Function ObtenerPagosPorTorre(numeroTorre As Integer) As List(Of PagoModel)
+    ' Método para obtener el historial de pagos de un apartamento
+    Public Shared Function ObtenerHistorialPagos(idApartamento As Integer) As List(Of PagoModel)
         Dim pagos As New List(Of PagoModel)
 
         Try
-            Using conn As New SQLiteConnection(ConexionDB.ObtenerCadenaConexion())
-                conn.Open()
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
 
-                Dim query As String = "SELECT p.*, a.NumeroApartamento " &
-                                    "FROM Pagos p " &
-                                    "INNER JOIN Apartamentos a ON p.IdApartamento = a.IdApartamento " &
-                                    "WHERE a.Torre = @torre " &
-                                    "ORDER BY p.FechaPago DESC, a.NumeroApartamento"
+                Dim consulta As String = "
+                    SELECT 
+                        id_pago,
+                        id_apartamentos,
+                        matricula_inmobiliaria,
+                        id_cuota,
+                        fecha_pago,
+                        numero_recibo,
+                        saldo_anterior,
+                        vr_pagado_administracion,
+                        vr_pagado_intereses,
+                        cuota_actual,
+                        total_pagado,
+                        saldo_actual,
+                        detalle,
+                        observacion
+                    FROM pagos 
+                    WHERE id_apartamentos = @idApartamento
+                    ORDER BY fecha_pago DESC"
 
-                Using cmd As New SQLiteCommand(query, conn)
-                    cmd.Parameters.AddWithValue("@torre", numeroTorre)
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@idApartamento", idApartamento)
 
-                    Using reader As SQLiteDataReader = cmd.ExecuteReader()
+                    Using reader As SQLiteDataReader = comando.ExecuteReader()
                         While reader.Read()
                             Dim pago As New PagoModel With {
-                                .IdPago = Convert.ToInt32(reader("IdPago")),
-                                .IdApartamento = Convert.ToInt32(reader("IdApartamento")),
-                                .NumeroRecibo = reader("NumeroRecibo").ToString(),
-                                .FechaPago = Convert.ToDateTime(reader("FechaPago")),
-                                .SaldoAnterior = Convert.ToDecimal(reader("SaldoAnterior")),
-                                .PagoAdministracion = Convert.ToDecimal(reader("PagoAdministracion")),
-                                .PagoIntereses = Convert.ToDecimal(reader("PagoIntereses")),
-                                .TotalPagado = Convert.ToDecimal(reader("TotalPagado")),
-                                .SaldoActual = Convert.ToDecimal(reader("SaldoActual")),
-                                .Observaciones = reader("Observaciones").ToString(),
-                                .MatriculaInmobiliaria = reader("MatriculaInmobiliaria").ToString(),
-                                .CuotaActual = Convert.ToDecimal(reader("CuotaActual")),
-                                .FechaRegistro = Convert.ToDateTime(reader("FechaRegistro"))
+                                .IdPago = Convert.ToInt32(reader("id_pago")),
+                                .IdApartamento = Convert.ToInt32(reader("id_apartamentos")),
+                                .MatriculaInmobiliaria = If(IsDBNull(reader("matricula_inmobiliaria")), "", reader("matricula_inmobiliaria").ToString()),
+                                .IdCuota = If(IsDBNull(reader("id_cuota")), Nothing, Convert.ToInt32(reader("id_cuota"))),
+                                .FechaPago = Convert.ToDateTime(reader("fecha_pago")),
+                                .NumeroRecibo = If(IsDBNull(reader("numero_recibo")), "", reader("numero_recibo").ToString()),
+                                .SaldoAnterior = If(IsDBNull(reader("saldo_anterior")), 0D, Convert.ToDecimal(reader("saldo_anterior"))),
+                                .PagoAdministracion = If(IsDBNull(reader("vr_pagado_administracion")), 0D, Convert.ToDecimal(reader("vr_pagado_administracion"))),
+                                .PagoIntereses = If(IsDBNull(reader("vr_pagado_intereses")), 0D, Convert.ToDecimal(reader("vr_pagado_intereses"))),
+                                .CuotaActual = If(IsDBNull(reader("cuota_actual")), 0D, Convert.ToDecimal(reader("cuota_actual"))),
+                                .TotalPagado = If(IsDBNull(reader("total_pagado")), 0D, Convert.ToDecimal(reader("total_pagado"))),
+                                .SaldoActual = If(IsDBNull(reader("saldo_actual")), 0D, Convert.ToDecimal(reader("saldo_actual"))),
+                                .Detalle = If(IsDBNull(reader("detalle")), "", reader("detalle").ToString()),
+                                .Observaciones = If(IsDBNull(reader("observacion")), "", reader("observacion").ToString())
                             }
+
                             pagos.Add(pago)
                         End While
                     End Using
                 End Using
             End Using
 
-            Return pagos
         Catch ex As Exception
-            Throw New Exception($"Error al obtener pagos: {ex.Message}")
+            Throw New Exception($"Error al obtener historial de pagos: {ex.Message}")
+        End Try
+
+        Return pagos
+    End Function
+
+    ' Método para obtener el último saldo de un apartamento
+    Public Shared Function ObtenerUltimoSaldo(idApartamento As Integer) As Decimal
+        Try
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
+
+                Dim consulta As String = "
+                    SELECT saldo_actual 
+                    FROM pagos 
+                    WHERE id_apartamentos = @idApartamento 
+                    ORDER BY fecha_pago DESC, id_pago DESC
+                    LIMIT 1"
+
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@idApartamento", idApartamento)
+
+                    Dim resultado = comando.ExecuteScalar()
+                    Return If(resultado IsNot Nothing AndAlso Not IsDBNull(resultado), Convert.ToDecimal(resultado), 0)
+                End Using
+            End Using
+
+        Catch ex As Exception
+            Return 0
         End Try
     End Function
+
+    ' Método para verificar si existe un número de recibo
+    Public Shared Function ExisteNumeroRecibo(numeroRecibo As String) As Boolean
+        Try
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
+
+                Dim consulta As String = "SELECT COUNT(*) FROM pagos WHERE numero_recibo = @numeroRecibo"
+
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@numeroRecibo", numeroRecibo)
+
+                    Dim count As Integer = Convert.ToInt32(comando.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
+
+        Catch ex As Exception
+            Return False
+        End Try
+    End Function
+
+    ' Método para obtener pagos por torre y periodo
+    Public Shared Function ObtenerPagosPorTorre(torre As Integer, fechaInicio As DateTime?, fechaFin As DateTime?) As List(Of PagoModel)
+        Dim pagos As New List(Of PagoModel)
+
+        Try
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
+
+                Dim consulta As String = "
+                    SELECT 
+                        p.id_pago,
+                        p.id_apartamentos,
+                        p.matricula_inmobiliaria,
+                        p.id_cuota,
+                        p.fecha_pago,
+                        p.numero_recibo,
+                        p.saldo_anterior,
+                        p.vr_pagado_administracion,
+                        p.vr_pagado_intereses,
+                        p.cuota_actual,
+                        p.total_pagado,
+                        p.saldo_actual,
+                        p.detalle,
+                        p.observacion,
+                        a.numero_apartamento
+                    FROM pagos p
+                    INNER JOIN Apartamentos a ON p.id_apartamentos = a.id_apartamentos
+                    WHERE a.id_torre = @torre"
+
+                If fechaInicio.HasValue Then
+                    consulta &= " AND p.fecha_pago >= @fechaInicio"
+                End If
+
+                If fechaFin.HasValue Then
+                    consulta &= " AND p.fecha_pago <= @fechaFin"
+                End If
+
+                consulta &= " ORDER BY p.fecha_pago DESC"
+
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@torre", torre)
+
+                    If fechaInicio.HasValue Then
+                        comando.Parameters.AddWithValue("@fechaInicio", fechaInicio.Value)
+                    End If
+
+                    If fechaFin.HasValue Then
+                        comando.Parameters.AddWithValue("@fechaFin", fechaFin.Value)
+                    End If
+
+                    Using reader As SQLiteDataReader = comando.ExecuteReader()
+                        While reader.Read()
+                            Dim pago As New PagoModel With {
+                                .IdPago = Convert.ToInt32(reader("id_pago")),
+                                .IdApartamento = Convert.ToInt32(reader("id_apartamentos")),
+                                .MatriculaInmobiliaria = If(IsDBNull(reader("matricula_inmobiliaria")), "", reader("matricula_inmobiliaria").ToString()),
+                                .IdCuota = If(IsDBNull(reader("id_cuota")), Nothing, Convert.ToInt32(reader("id_cuota"))),
+                                .FechaPago = Convert.ToDateTime(reader("fecha_pago")),
+                                .NumeroRecibo = If(IsDBNull(reader("numero_recibo")), "", reader("numero_recibo").ToString()),
+                                .SaldoAnterior = If(IsDBNull(reader("saldo_anterior")), 0D, Convert.ToDecimal(reader("saldo_anterior"))),
+                                .PagoAdministracion = If(IsDBNull(reader("vr_pagado_administracion")), 0D, Convert.ToDecimal(reader("vr_pagado_administracion"))),
+                                .PagoIntereses = If(IsDBNull(reader("vr_pagado_intereses")), 0D, Convert.ToDecimal(reader("vr_pagado_intereses"))),
+                                .CuotaActual = If(IsDBNull(reader("cuota_actual")), 0D, Convert.ToDecimal(reader("cuota_actual"))),
+                                .TotalPagado = If(IsDBNull(reader("total_pagado")), 0D, Convert.ToDecimal(reader("total_pagado"))),
+                                .SaldoActual = If(IsDBNull(reader("saldo_actual")), 0D, Convert.ToDecimal(reader("saldo_actual"))),
+                                .Detalle = If(IsDBNull(reader("detalle")), "", reader("detalle").ToString()),
+                                .Observaciones = If(IsDBNull(reader("observacion")), "", reader("observacion").ToString()),
+                                .NumeroApartamento = If(IsDBNull(reader("numero_apartamento")), "", reader("numero_apartamento").ToString())
+                            }
+
+                            pagos.Add(pago)
+                        End While
+                    End Using
+                End Using
+            End Using
+
+        Catch ex As Exception
+            Throw New Exception($"Error al obtener pagos por torre: {ex.Message}")
+        End Try
+
+        Return pagos
+    End Function
+
+    ' Método para obtener estadísticas de pagos por torre
+    Public Shared Function ObtenerEstadisticasPagosTorre(torre As Integer, mes As Integer, año As Integer) As Dictionary(Of String, Object)
+        Dim estadisticas As New Dictionary(Of String, Object)
+
+        Try
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
+
+                Dim consulta As String = "
+                    SELECT 
+                        COUNT(DISTINCT p.id_apartamentos) as apartamentos_pagaron,
+                        COUNT(*) as total_pagos,
+                        SUM(p.vr_pagado_administracion) as total_administracion,
+                        SUM(p.vr_pagado_intereses) as total_intereses,
+                        SUM(p.total_pagado) as total_recaudado,
+                        AVG(p.total_pagado) as promedio_pago
+                    FROM pagos p
+                    INNER JOIN Apartamentos a ON p.id_apartamentos = a.id_apartamentos
+                    WHERE a.id_torre = @torre 
+                    AND strftime('%m', p.fecha_pago) = @mes 
+                    AND strftime('%Y', p.fecha_pago) = @año"
+
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@torre", torre)
+                    comando.Parameters.AddWithValue("@mes", mes.ToString("00"))
+                    comando.Parameters.AddWithValue("@año", año.ToString())
+
+                    Using reader As SQLiteDataReader = comando.ExecuteReader()
+                        If reader.Read() Then
+                            estadisticas("apartamentos_pagaron") = If(IsDBNull(reader("apartamentos_pagaron")), 0, Convert.ToInt32(reader("apartamentos_pagaron")))
+                            estadisticas("total_pagos") = If(IsDBNull(reader("total_pagos")), 0, Convert.ToInt32(reader("total_pagos")))
+                            estadisticas("total_administracion") = If(IsDBNull(reader("total_administracion")), 0D, Convert.ToDecimal(reader("total_administracion")))
+                            estadisticas("total_intereses") = If(IsDBNull(reader("total_intereses")), 0D, Convert.ToDecimal(reader("total_intereses")))
+                            estadisticas("total_recaudado") = If(IsDBNull(reader("total_recaudado")), 0D, Convert.ToDecimal(reader("total_recaudado")))
+                            estadisticas("promedio_pago") = If(IsDBNull(reader("promedio_pago")), 0D, Convert.ToDecimal(reader("promedio_pago")))
+                        End If
+                    End Using
+                End Using
+            End Using
+
+        Catch ex As Exception
+            ' En caso de error, devolver valores por defecto
+            estadisticas("apartamentos_pagaron") = 0
+            estadisticas("total_pagos") = 0
+            estadisticas("total_administracion") = 0
+            estadisticas("total_intereses") = 0
+            estadisticas("total_recaudado") = 0
+            estadisticas("promedio_pago") = 0
+        End Try
+
+        Return estadisticas
+    End Function
+
+    ' Método para obtener la matrícula inmobiliaria de un apartamento
+    Public Shared Function ObtenerMatriculaInmobiliaria(idApartamento As Integer) As String
+        Try
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
+
+                Dim consulta As String = "SELECT matricula_inmobiliaria FROM Apartamentos WHERE id_apartamentos = @id"
+
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@id", idApartamento)
+
+                    Dim resultado = comando.ExecuteScalar()
+                    Return If(resultado IsNot Nothing AndAlso Not IsDBNull(resultado), resultado.ToString(), "185000")
+                End Using
+            End Using
+
+        Catch ex As Exception
+            Return "185000" ' Valor por defecto
+        End Try
+    End Function
+
+
+    ' ... (métodos existentes) ...
+
+    ''' <summary>
+    ''' Obtiene un objeto PagoModel completo basado en el número de recibo.
+    ''' </summary>
+    Public Shared Function ObtenerPagoPorNumeroRecibo(numeroRecibo As String) As PagoModel
+        Dim pago As PagoModel = Nothing
+        Try
+            Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
+                conexion.Open()
+                Dim consulta As String = "SELECT * FROM pagos WHERE numero_recibo = @numeroRecibo LIMIT 1"
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@numeroRecibo", numeroRecibo)
+                    Using reader As SQLiteDataReader = comando.ExecuteReader()
+                        If reader.Read() Then
+                            pago = New PagoModel()
+                            pago.IdPago = Convert.ToInt32(reader("id_pago"))
+                            pago.IdApartamento = Convert.ToInt32(reader("id_apartamentos"))
+                            pago.MatriculaInmobiliaria = reader("matricula_inmobiliaria").ToString()
+                            ' Asegúrate de manejar DBNull para id_cuota si es nullable
+                            pago.IdCuota = If(reader("id_cuota") Is DBNull.Value, Nothing, Convert.ToInt32(reader("id_cuota")))
+                            pago.FechaPago = Convert.ToDateTime(reader("fecha_pago"))
+                            pago.NumeroRecibo = reader("numero_recibo").ToString()
+                            pago.SaldoAnterior = Convert.ToDecimal(reader("saldo_anterior"))
+                            pago.PagoAdministracion = Convert.ToDecimal(reader("vr_pagado_administracion"))
+                            pago.PagoIntereses = Convert.ToDecimal(reader("vr_pagado_intereses"))
+                            pago.CuotaActual = Convert.ToDecimal(reader("cuota_actual"))
+                            pago.TotalPagado = Convert.ToDecimal(reader("total_pagado"))
+                            pago.SaldoActual = Convert.ToDecimal(reader("saldo_actual"))
+                            pago.Detalle = If(reader("detalle") Is DBNull.Value, String.Empty, reader("detalle").ToString())
+                            pago.Observaciones = If(reader("observacion") Is DBNull.Value, String.Empty, reader("observacion").ToString())
+
+                            ' Recuperar datos del apartamento para el PagoModel
+                            Dim apto As Apartamento = ApartamentoDAL.ObtenerApartamentoPorId(pago.IdApartamento)
+                            If apto IsNot Nothing Then
+                                pago.NumeroApartamento = apto.ObtenerCodigoApartamento()
+                                pago.NombreResidente = apto.NombreResidente
+                                pago.Torre = apto.Torre
+                            End If
+                        End If
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error al obtener pago por número de recibo: {ex.Message}", "Error de Datos", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+        Return pago
+    End Function
+
 End Class

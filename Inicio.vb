@@ -113,9 +113,7 @@ Public Class Inicio
 
     ' Evento para el nuevo botón Salir
     Private Sub btnSalir_Click(sender As Object, e As EventArgs) Handles btnSalir.Click
-        If MessageBox.Show("¿Está seguro que desea salir del sistema?", "Confirmar salida",
-                         MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
-            Application.Exit() ' Cierra completamente la aplicación
-        End If
+        Application.ExitThread() ' Cierra todos los hilos y la aplicación inmediatamente
     End Sub
+
 End Class
