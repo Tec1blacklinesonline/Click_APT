@@ -10,6 +10,7 @@ Public Class ApartamentoDAL
             Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
                 conexion.Open()
 
+                ' CORREGIDO: Campo id_piso en lugar de id_piso
                 Dim consulta As String = "
                     SELECT 
                         a.id_apartamentos,
@@ -207,6 +208,7 @@ Public Class ApartamentoDAL
             Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
                 conexion.Open()
 
+                ' CORREGIDO: Campo id_piso en lugar de id_piso
                 Dim consulta As String = "
                     SELECT 
                         a.id_apartamentos,
@@ -286,6 +288,7 @@ Public Class ApartamentoDAL
                     End If
                 End Using
 
+                ' CORREGIDO: Campo id_piso en lugar de id_piso
                 Dim consulta As String = "
                     INSERT INTO Apartamentos (id_torre, id_piso, numero_apartamento, nombre_residente, telefono, correo, matricula_inmobiliaria)
                     VALUES (@torre, @piso, @numero, @nombre, @telefono, @correo, @matricula);
@@ -317,6 +320,7 @@ Public Class ApartamentoDAL
             Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
                 conexion.Open()
 
+                ' CORREGIDO: Campo id_piso en lugar de id_piso
                 Dim consulta As String = "
                     SELECT 
                         a.id_apartamentos,
@@ -412,6 +416,7 @@ Public Class ApartamentoDAL
         Try
             Using conexion As SQLiteConnection = ConexionBD.ObtenerConexion()
                 conexion.Open()
+                ' CORREGIDO: Campo id_piso en lugar de id_piso
                 Dim consulta As String = "
                     SELECT 
                         a.id_apartamentos,

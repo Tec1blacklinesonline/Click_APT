@@ -1,8 +1,11 @@
-﻿Public Class PagoModel
-    ' Propiedades principales de la tabla pagos
+﻿' ============================================================================
+' MODELO DE PAGO
+' Representa un pago realizado en el sistema
+' ============================================================================
+
+Public Class PagoModel
     Public Property IdPago As Integer
     Public Property IdApartamento As Integer
-    Public Property MatriculaInmobiliaria As String
     Public Property IdCuota As Integer?
     Public Property FechaPago As DateTime
     Public Property NumeroRecibo As String
@@ -14,48 +17,57 @@
     Public Property SaldoActual As Decimal
     Public Property Detalle As String
     Public Property Observaciones As String
-
-    ' Propiedades adicionales para mostrar información
-    Public Property NumeroApartamento As String
-    Public Property NombreResidente As String
-    Public Property Torre As Integer
+    Public Property EstadoPago As String
+    Public Property UsuarioRegistro As String
+    Public Property FechaRegistro As DateTime
 
     ' Constructor vacío
     Public Sub New()
-        Me.FechaPago = DateTime.Now
-        Me.NumeroRecibo = ""
-        Me.MatriculaInmobiliaria = ""
-        Me.SaldoAnterior = 0
-        Me.PagoAdministracion = 0
-        Me.PagoIntereses = 0
-        Me.CuotaActual = 0
-        Me.TotalPagado = 0
-        Me.SaldoActual = 0
-        Me.Detalle = ""
-        Me.Observaciones = ""
-        Me.NumeroApartamento = ""
-        Me.NombreResidente = ""
-        Me.Torre = 0
+        EstadoPago = "REGISTRADO"
+        FechaPago = DateTime.Now
+        FechaRegistro = DateTime.Now
+        Detalle = String.Empty
+        Observaciones = String.Empty
     End Sub
 
     ' Constructor con parámetros básicos
-    Public Sub New(idApartamento As Integer, numeroRecibo As String)
+    Public Sub New(idApartamento As Integer, numeroRecibo As String, totalPagado As Decimal)
         Me.New()
         Me.IdApartamento = idApartamento
         Me.NumeroRecibo = numeroRecibo
+        Me.TotalPagado = totalPagado
     End Sub
 
-    ' Método para validar datos del pago
-    Public Function ValidarDatos() As Boolean
-        Return IdApartamento > 0 AndAlso
-               Not String.IsNullOrEmpty(NumeroRecibo) AndAlso
-               FechaPago <= DateTime.Now AndAlso
-               TotalPagado >= 0
+    ' Método para validar el pago
+    Public Function Validar() As Boolean
+        If IdApartamento <= 0 Then
+            Return False
+        End If
+
+        If String.IsNullOrWhiteSpace(NumeroRecibo) Then
+            Return False
+        End If
+
+        If TotalPagado <= 0 Then
+            Return False
+        End If
+
+        Return True
     End Function
 
-    ' Método ToString para representación en texto
-    Public Overrides Function ToString() As String
-        Return $"Recibo: {NumeroRecibo} - Apartamento: {NumeroApartamento} - Total: {TotalPagado:C}"
+    ' Método para obtener descripción del pago
+    Public Function ObtenerDescripcion() As String
+        Dim descripcion As String = $"Recibo: {NumeroRecibo}"
+
+        If PagoAdministracion > 0 Then
+            descripcion &= $" | Administración: {PagoAdministracion:C}"
+        End If
+
+        If PagoIntereses > 0 Then
+            descripcion &= $" | Intereses: {PagoIntereses:C}"
+        End If
+
+        Return descripcion
     End Function
 
 End Class

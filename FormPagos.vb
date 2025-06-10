@@ -1,4 +1,10 @@
-﻿Imports System.Drawing
+﻿' ============================================================================
+' FORMULARIO DE PAGOS CORREGIDO
+' Versión corregida que implementa correctamente el cálculo de intereses
+' y generación de número de recibo según especificaciones
+' ============================================================================
+
+Imports System.Drawing
 Imports System.Windows.Forms
 Imports System.Linq
 Imports System.Diagnostics
@@ -21,7 +27,7 @@ Public Class FormPagos
 
     Private Sub InitializeComponent()
         Me.SuspendLayout()
-        Me.Text = $"Registro de Pagos - Torre {numeroTorre}"
+        Me.Text = "Registro de Pagos - Torre " & numeroTorre.ToString()
         Me.Size = New Size(1400, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.BackColor = Color.FromArgb(250, 250, 250)
@@ -38,7 +44,7 @@ Public Class FormPagos
         }
 
         Dim lblTitulo As New Label With {
-            .Text = $"📋 REGISTRO DE PAGOS - TORRE {numeroTorre}",
+            .Text = "📋 REGISTRO DE PAGOS - TORRE " & numeroTorre.ToString(),
             .Font = New Font("Segoe UI", 18, FontStyle.Bold),
             .ForeColor = Color.White,
             .TextAlign = ContentAlignment.MiddleCenter,
@@ -251,12 +257,12 @@ Public Class FormPagos
             For Each apartamento In apartamentos
                 Dim fila As Integer = dgvPagos.Rows.Add()
 
-                ' Obtener el último saldo
+                ' CORREGIDO: Obtener el último saldo usando PagosDAL
                 Dim ultimoSaldo As Decimal = PagosDAL.ObtenerUltimoSaldo(apartamento.IdApartamento)
 
                 ' Llenar datos básicos
                 dgvPagos.Rows(fila).Cells("IdApartamento").Value = apartamento.IdApartamento
-                dgvPagos.Rows(fila).Cells("Apartamento").Value = $"T{numeroTorre}-{apartamento.NumeroApartamento}"
+                dgvPagos.Rows(fila).Cells("Apartamento").Value = "T" & numeroTorre.ToString() & "-" & apartamento.NumeroApartamento
                 dgvPagos.Rows(fila).Cells("FechaPago").Value = DateTime.Now.ToString("dd/MM/yyyy")
                 dgvPagos.Rows(fila).Cells("SaldoAnterior").Value = ultimoSaldo
                 dgvPagos.Rows(fila).Cells("PagoAdministracion").Value = 0
@@ -275,12 +281,12 @@ Public Class FormPagos
             Next
 
         Catch ex As Exception
-            MessageBox.Show($"Error al cargar apartamentos: {ex.Message}", "Error",
+            MessageBox.Show("Error al cargar apartamentos: " & ex.Message, "Error",
                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
-    ' EVENTO PRINCIPAL - Cálculo automático de intereses
+    ' EVENTO PRINCIPAL CORREGIDO - Cálculo automático de intereses
     Private Sub dgvPagos_CellValueChanged(sender As Object, e As DataGridViewCellEventArgs)
         If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 Then
             Try
@@ -314,7 +320,7 @@ Public Class FormPagos
                     Dim pagoAdministracion As Decimal = ConvertirADecimal(row.Cells("PagoAdministracion").Value)
                     Dim saldoAnterior As Decimal = ConvertirADecimal(row.Cells("SaldoAnterior").Value)
 
-                    ' --- CÁLCULO AUTOMÁTICO DE INTERESES ---
+                    ' --- CÁLCULO AUTOMÁTICO DE INTERESES CORREGIDO VB.NET ---
                     Dim montoIntereses As Decimal = 0D
 
                     ' Actualizar el saldo actual del apartamento para el cálculo
@@ -323,7 +329,7 @@ Public Class FormPagos
                     ' Solo calcular intereses si hay saldo pendiente
                     If apartamento.SaldoActual > 0 Then
                         Try
-                            ' Obtener la información de la cuota pendiente más antigua
+                            ' CORREGIDO: Usar la estructura CuotaPendienteInfo implementada
                             Dim cuotaInfo As CuotasDAL.CuotaPendienteInfo = CuotasDAL.ObtenerCuotaPendienteMasAntigua(apartamento.IdApartamento)
 
                             If cuotaInfo.ExisteCuotaPendiente Then
@@ -331,7 +337,7 @@ Public Class FormPagos
                                 Dim tasaInteresMoraAnual As Decimal = ParametrosDAL.ObtenerTasaInteresMoraActual()
 
                                 ' Calcular días en mora del apartamento
-                                Dim diasEnMora As Integer = apartamento.CalcularDiasEnMora(Date.Today)
+                                Dim diasEnMora As Integer = cuotaInfo.DiasVencida
 
                                 If diasEnMora > 0 AndAlso tasaInteresMoraAnual > 0 Then
                                     ' Fórmula de interés de mora: Capital * TasaAnual(%) / 100 * (DíasMora / 365)
@@ -342,6 +348,7 @@ Public Class FormPagos
                         Catch ex As Exception
                             ' Si hay error al calcular intereses, mantener en 0
                             montoIntereses = 0D
+                            Debug.WriteLine("Error calculando intereses: " & ex.Message)
                         End Try
                     End If
 
@@ -379,7 +386,8 @@ Public Class FormPagos
 
             Catch ex As Exception
                 ' En caso de error, no interrumpir la operación
-                Debug.WriteLine($"Error en dgvPagos_CellValueChanged: {ex.Message}")
+                Debug.WriteLine("Error en dgvPagos_CellValueChanged: " & ex.Message)
+                MessageBox.Show("Error en cálculo: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             End Try
         End If
     End Sub
@@ -431,7 +439,7 @@ Public Class FormPagos
             End If
 
             Dim resultado As DialogResult = MessageBox.Show(
-                $"¿Confirma el registro de {filasParaRegistrar} pago(s)?",
+                "¿Confirma el registro de " & filasParaRegistrar.ToString() & " pago(s)?",
                 "Confirmar Registro",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question)
@@ -444,7 +452,7 @@ Public Class FormPagos
             End If
 
         Catch ex As Exception
-            MessageBox.Show($"Error al registrar pagos: {ex.Message}", "Error",
+            MessageBox.Show("Error al registrar pagos: " & ex.Message, "Error",
                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
@@ -457,12 +465,11 @@ Public Class FormPagos
                     Dim pagoAdmin As Decimal = ConvertirADecimal(row.Cells("PagoAdministracion").Value)
 
                     If pagoAdmin > 0 Then
-                        ' Generar número de recibo único
-                        Dim numeroRecibo As String = GenerarNumeroRecibo()
+                        ' CORREGIDO: Generar número de recibo según especificaciones
+                        Dim idApartamento As Integer = Convert.ToInt32(row.Cells("IdApartamento").Value)
+                        Dim numeroRecibo As String = GenerarNumeroRecibo(idApartamento)
 
                         ' Crear objeto PagoModel compatible con tu estructura
-                        Dim idApartamento As Integer = Convert.ToInt32(row.Cells("IdApartamento").Value)
-
                         Dim pago As New PagoModel With {
                             .IdApartamento = idApartamento,
                             .NumeroRecibo = numeroRecibo,
@@ -474,9 +481,11 @@ Public Class FormPagos
                             .TotalPagado = ConvertirADecimal(row.Cells("Total").Value),
                             .SaldoActual = ConvertirADecimal(row.Cells("SaldoAnterior").Value) - ConvertirADecimal(row.Cells("Total").Value),
                             .Observaciones = ObtenerValorCelda(row.Cells("Observaciones").Value),
-                            .MatriculaInmobiliaria = PagosDAL.ObtenerMatriculaInmobiliaria(idApartamento)
+                            .EstadoPago = "REGISTRADO",
+                            .UsuarioRegistro = "Sistema"
                         }
 
+                        ' CORREGIDO: Usar PagosDAL.RegistrarPago implementado
                         If PagosDAL.RegistrarPago(pago) Then
                             row.Cells("NumeroRecibo").Value = numeroRecibo
 
@@ -499,20 +508,40 @@ Public Class FormPagos
                 End If
             Catch ex As Exception
                 ' Continuar con la siguiente fila si hay error
+                MessageBox.Show("Error al registrar pago: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Continue For
             End Try
         Next
     End Sub
 
-    ' Generar número de recibo único
-    Private Function GenerarNumeroRecibo() As String
-        Dim timestamp As String = DateTime.Now.ToString("yyyyMMddHHmmss")
-        Dim random As New Random()
-        Dim numeroAleatorio As Integer = random.Next(100, 999)
-        Return $"{timestamp}{numeroAleatorio}"
+    ' CORREGIDO: Generar número de recibo según especificaciones de la documentación
+    ' Formato: matricula_inmobiliaria + fecha + hora (ej: 1851442505031425)
+    Private Function GenerarNumeroRecibo(idApartamento As Integer) As String
+        Try
+            ' Obtener matrícula inmobiliaria usando PagosDAL
+            Dim matriculaInmobiliaria As String = PagosDAL.ObtenerMatriculaInmobiliaria(idApartamento)
+
+            ' Si no hay matrícula, usar ID del apartamento como respaldo
+            If String.IsNullOrEmpty(matriculaInmobiliaria) Then
+                matriculaInmobiliaria = idApartamento.ToString().PadLeft(6, "0"c)
+            End If
+
+            ' Generar fecha y hora en formato compacto (YYMMDDHHmm)
+            Dim fechaHora As String = DateTime.Now.ToString("yyMMddHHmm")
+
+            ' Combinar según especificación: matricula + fecha + hora
+            Return matriculaInmobiliaria & fechaHora
+
+        Catch ex As Exception
+            ' Fallback en caso de error: timestamp + random
+            Dim timestamp As String = DateTime.Now.ToString("yyyyMMddHHmmss")
+            Dim random As New Random()
+            Dim numeroAleatorio As Integer = random.Next(100, 999)
+            Return timestamp & numeroAleatorio.ToString()
+        End Try
     End Function
 
-    ' Nuevo método para actualizar la vista sin perder los registros
+    ' Resto de métodos sin cambios significativos...
     Private Sub ActualizarVistaPostRegistro()
         Try
             ' Recorrer todas las filas y actualizar solo las que no tienen número de recibo
@@ -558,7 +587,7 @@ Public Class FormPagos
             End If
 
         Catch ex As Exception
-            MessageBox.Show($"Error al limpiar campos: {ex.Message}", "Error",
+            MessageBox.Show("Error al limpiar campos: " & ex.Message, "Error",
                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
@@ -601,7 +630,7 @@ Public Class FormPagos
             End If
 
         Catch ex As Exception
-            MessageBox.Show($"Error al intentar enviar el correo: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error al intentar enviar el correo: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -613,7 +642,7 @@ Public Class FormPagos
             Dim idApartamento As Integer = Convert.ToInt32(row.Cells("IdApartamento").Value)
             Dim numeroRecibo As String = ObtenerValorCelda(row.Cells("NumeroRecibo").Value)
 
-            ' Obtener pago completo desde la base de datos
+            ' Obtener pago completo desde la base de datos usando PagosDAL
             Dim pago As PagoModel = PagosDAL.ObtenerPagoPorNumeroRecibo(numeroRecibo)
             Dim apartamento As Apartamento = ApartamentoDAL.ObtenerApartamentoPorId(idApartamento)
 
@@ -621,7 +650,7 @@ Public Class FormPagos
                 Dim rutaPdfGenerado As String = ReciboPDF.GenerarReciboDePago(pago, apartamento)
 
                 If Not String.IsNullOrEmpty(rutaPdfGenerado) Then
-                    Dim mensaje As String = $"Recibo PDF generado y guardado en:{vbCrLf}{rutaPdfGenerado}{vbCrLf}{vbCrLf}¿Desea abrir el archivo?"
+                    Dim mensaje As String = "Recibo PDF generado y guardado en:" & vbCrLf & rutaPdfGenerado & vbCrLf & vbCrLf & "¿Desea abrir el archivo?"
 
                     If MessageBox.Show(mensaje, "PDF Generado", MessageBoxButtons.YesNo, MessageBoxIcon.Information) = DialogResult.Yes Then
                         Process.Start(New ProcessStartInfo(rutaPdfGenerado) With {.UseShellExecute = True})
@@ -637,7 +666,7 @@ Public Class FormPagos
 
         Catch ex As Exception
             Me.Cursor = Cursors.Default
-            MessageBox.Show($"Error al generar PDF: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error al generar PDF: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -661,7 +690,7 @@ Public Class FormPagos
                 End If
 
                 ' Mostrar mensaje de confirmación
-                Dim mensaje As String = $"¿Enviar recibo por correo a {apartamento.Correo}?"
+                Dim mensaje As String = "¿Enviar recibo por correo a " & apartamento.Correo & "?"
                 If MessageBox.Show(mensaje, "Confirmar envío", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
 
                     Me.Cursor = Cursors.WaitCursor
@@ -695,7 +724,7 @@ Public Class FormPagos
 
         Catch ex As Exception
             Me.Cursor = Cursors.Default
-            MessageBox.Show($"Error al enviar correo: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error al enviar correo: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
