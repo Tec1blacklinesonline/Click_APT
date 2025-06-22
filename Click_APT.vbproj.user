@@ -10,6 +10,15 @@
     <Compile Update="FormConfiguracionSMTP.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="FormCrearUsuario.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="FormDashboard.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="FormDescargarRecibos.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="FormDetallePropietario.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -20,6 +29,15 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="FormPagos.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="FormPagosExtra.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="FormProgresoDescarga.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="FormProgresoEnvio.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="FormPropietarios.vb">

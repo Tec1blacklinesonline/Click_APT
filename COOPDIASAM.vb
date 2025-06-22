@@ -22,6 +22,7 @@ Public Class COOPDIASAM
     Private colorPagosOscuro As Color = Color.FromArgb(34, 139, 34)  ' Verde oscuro para pagos
     Private colorEstados As Color = Color.FromArgb(155, 89, 182)     ' Morado para estados
     Private colorHistorial As Color = Color.FromArgb(231, 76, 60)    ' Rojo para historial
+    Private colorDescarga As Color = Color.FromArgb(52, 152, 219)    ' Azul para descarga de recibos
 
     Private Sub COOPDIASAM_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Verificar integridad de la base de datos al inicio
@@ -31,7 +32,7 @@ Public Class COOPDIASAM
 
         ' Ajustes de la ventana
         Me.Text = "CONJUNTO RESIDENCIAL COOPDIASAM - v2025.1"
-        Me.Size = New Size(1400, 800)  ' Ventana más grande
+        Me.Size = New Size(1400, 800)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
         Me.MaximizeBox = False
@@ -61,7 +62,7 @@ Public Class COOPDIASAM
     Private Sub CrearPanelSuperior()
         ' Panel superior que contiene título y botón de menú
         Dim panelSuperior As New Panel With {
-            .Size = New Size(Me.ClientSize.Width, 80),  ' Más alto para más información
+            .Size = New Size(Me.ClientSize.Width, 80),
             .Location = New Point(0, 0),
             .BackColor = colorPrimario,
             .Dock = DockStyle.Top
@@ -94,13 +95,15 @@ Public Class COOPDIASAM
         }
         panelSuperior.Controls.Add(labelTitulo)
 
-        ' Información de usuario actual
+        ' Información de usuario actual - CORREGIDO: Alineación a la derecha
         lblUsuarioActual = New Label With {
             .Text = "Cargando usuario...",
             .Font = New Font("Segoe UI", 10),
             .ForeColor = Color.White,
-            .AutoSize = True,
-            .Location = New Point(panelSuperior.Width - 200, 15),
+            .AutoSize = False,
+            .Size = New Size(250, 20),
+            .Location = New Point(panelSuperior.Width - 270, 15),
+            .TextAlign = ContentAlignment.MiddleRight,
             .Anchor = AnchorStyles.Top Or AnchorStyles.Right
         }
         panelSuperior.Controls.Add(lblUsuarioActual)
@@ -135,7 +138,7 @@ Public Class COOPDIASAM
     Private Sub CrearPanelMenu()
         ' Panel de menú lateral
         panelMenu = New Panel With {
-            .Size = New Size(250, Me.ClientSize.Height - 80),  ' Más ancho
+            .Size = New Size(250, Me.ClientSize.Height - 80),
             .Location = New Point(0, 80),
             .BackColor = colorMenu,
             .Visible = False
@@ -152,14 +155,14 @@ Public Class COOPDIASAM
         }
         panelMenu.Controls.Add(lblMenuTitulo)
 
-        ' Botones del menú con íconos (AMPLIADO)
-        Dim botonesMenu() As String = {"DASHBOARD", "TORRES", "PROPIETARIOS", "PAGOS", "ESTADOS", "HISTORIAL", "REGISTRO", "CONFIGURACIÓN", "CERRAR SESIÓN"}
-        Dim iconos() As String = {"📊", "🏢", "👥", "💰", "📋", "📜", "📝", "⚙️", "🚪"}
+        ' ✅ MODIFICADO: Agregar "DESCARGAR" a la lista de botones del menú
+        Dim botonesMenu() As String = {"DASHBOARD", "PROPIETARIOS", "PAGOS", "DESCARGAR", "ESTADOS", "HISTORIAL", "REGISTRO", "CONFIGURACIÓN", "CERRAR SESIÓN"}
+        Dim iconos() As String = {"📊", "👥", "💰", "📥", "📋", "📜", "📝", "⚙️", "🚪"}
 
         For i = 0 To botonesMenu.Length - 1
             Dim btn As New Button With {
                 .Text = iconos(i) & " " & botonesMenu(i),
-                .Size = New Size(230, 45),  ' Botones más grandes
+                .Size = New Size(230, 45),
                 .Location = New Point(10, 60 + i * 50),
                 .BackColor = colorBoton,
                 .FlatStyle = FlatStyle.Flat,
@@ -184,7 +187,8 @@ Public Class COOPDIASAM
             .Location = New Point(0, 80),
             .Size = New Size(Me.ClientSize.Width, Me.ClientSize.Height - 80),
             .BackColor = colorFondo,
-            .Dock = DockStyle.Fill
+            .Dock = DockStyle.Fill,
+            .AutoScroll = True
         }
         Me.Controls.Add(panelContenido)
     End Sub
@@ -193,38 +197,39 @@ Public Class COOPDIASAM
         ' Limpiar panel antes de crear dashboard
         panelContenido.Controls.Clear()
 
-        ' Título de sección
+        ' Título de sección - CORREGIDO: Posición fija
         Dim lblSeccion As New Label With {
             .Text = "DASHBOARD PRINCIPAL - CONJUNTO RESIDENCIAL COOPDIASAM",
             .Font = New Font("Segoe UI", 14, FontStyle.Bold),
             .ForeColor = colorMenu,
             .AutoSize = True,
-            .Location = New Point(20, 20)
+            .Location = New Point(30, 20)
         }
         panelContenido.Controls.Add(lblSeccion)
 
-        ' Línea divisoria
+        ' Línea divisoria - CORREGIDO: Anchura fija y posición calculada
         Dim lineaDivisoria As New Panel With {
             .BackColor = colorPrimario,
-            .Size = New Size(panelContenido.Width - 40, 2),
-            .Location = New Point(20, lblSeccion.Location.Y + 30)
+            .Size = New Size(panelContenido.ClientSize.Width - 60, 3),
+            .Location = New Point(30, 55)
         }
         panelContenido.Controls.Add(lineaDivisoria)
 
-        ' Panel de estadísticas resumidas
+        ' Panel de estadísticas resumidas - CORREGIDO: Posiciones y tamaños fijos
         CrearPanelEstadisticas()
 
-        ' Panel de accesos rápidos
+        ' Panel de accesos rápidos - CORREGIDO: Posición calculada correctamente
         CrearPanelAccesosRapidos()
 
-        ' Panel de torres
+        ' Panel de torres - CORREGIDO: Posición ajustada
         CrearTorresEnDashboard()
     End Sub
 
     Private Sub CrearPanelEstadisticas()
+        ' CORREGIDO: Panel con dimensiones y posición fijas
         Dim panelStats As New Panel With {
-            .Location = New Point(20, 70),
-            .Size = New Size(panelContenido.Width - 40, 120),
+            .Location = New Point(30, 80),
+            .Size = New Size(panelContenido.ClientSize.Width - 60, 120),
             .BackColor = Color.White,
             .BorderStyle = BorderStyle.FixedSingle
         }
@@ -235,17 +240,17 @@ Public Class COOPDIASAM
             .Text = "📊 ESTADÍSTICAS GENERALES",
             .Font = New Font("Segoe UI", 12, FontStyle.Bold),
             .ForeColor = colorMenu,
-            .Location = New Point(10, 10),
+            .Location = New Point(15, 10),
             .AutoSize = True
         }
         panelStats.Controls.Add(lblTituloStats)
 
-        ' Labels para mostrar estadísticas
+        ' CORREGIDO: Labels con posiciones exactas y no superpuestas
         Dim lblTotalApartamentos As New Label With {
             .Text = "Total Apartamentos: --",
             .Font = New Font("Segoe UI", 10),
             .Location = New Point(20, 40),
-            .AutoSize = True,
+            .Size = New Size(250, 20),
             .Tag = "total_apartamentos"
         }
         panelStats.Controls.Add(lblTotalApartamentos)
@@ -253,8 +258,8 @@ Public Class COOPDIASAM
         Dim lblPagosMes As New Label With {
             .Text = "Pagos del Mes: --",
             .Font = New Font("Segoe UI", 10),
-            .Location = New Point(20, 60),
-            .AutoSize = True,
+            .Location = New Point(20, 65),
+            .Size = New Size(250, 20),
             .Tag = "pagos_mes"
         }
         panelStats.Controls.Add(lblPagosMes)
@@ -262,8 +267,8 @@ Public Class COOPDIASAM
         Dim lblRecaudacion As New Label With {
             .Text = "Recaudación del Mes: --",
             .Font = New Font("Segoe UI", 10),
-            .Location = New Point(300, 40),
-            .AutoSize = True,
+            .Location = New Point(350, 40),
+            .Size = New Size(250, 20),
             .Tag = "recaudacion_mes"
         }
         panelStats.Controls.Add(lblRecaudacion)
@@ -271,17 +276,17 @@ Public Class COOPDIASAM
         Dim lblCuotasPendientes As New Label With {
             .Text = "Cuotas Pendientes: --",
             .Font = New Font("Segoe UI", 10),
-            .Location = New Point(300, 60),
-            .AutoSize = True,
+            .Location = New Point(350, 65),
+            .Size = New Size(250, 20),
             .Tag = "cuotas_pendientes"
         }
         panelStats.Controls.Add(lblCuotasPendientes)
 
-        ' Botón actualizar estadísticas
+        ' Botón actualizar estadísticas - CORREGIDO: Posición relativa al panel
         Dim btnActualizar As New Button With {
             .Text = "🔄 Actualizar",
             .Size = New Size(100, 30),
-            .Location = New Point(panelStats.Width - 120, 80),
+            .Location = New Point(panelStats.Width - 130, 85),
             .BackColor = colorPrimario,
             .ForeColor = Color.White,
             .FlatStyle = FlatStyle.Flat
@@ -291,10 +296,12 @@ Public Class COOPDIASAM
         panelStats.Controls.Add(btnActualizar)
     End Sub
 
+    ' ✅ MODIFICADO: Panel de accesos rápidos con "DESCARGAR RECIBOS"
     Private Sub CrearPanelAccesosRapidos()
+        ' CORREGIDO: Posición calculada después del panel de estadísticas
         Dim panelAccesos As New Panel With {
-            .Location = New Point(20, 210),
-            .Size = New Size(panelContenido.Width - 40, 80),
+            .Location = New Point(30, 220),
+            .Size = New Size(panelContenido.ClientSize.Width - 60, 80),
             .BackColor = Color.White,
             .BorderStyle = BorderStyle.FixedSingle
         }
@@ -304,24 +311,28 @@ Public Class COOPDIASAM
             .Text = "⚡ ACCESOS RÁPIDOS",
             .Font = New Font("Segoe UI", 12, FontStyle.Bold),
             .ForeColor = colorMenu,
-            .Location = New Point(10, 10),
+            .Location = New Point(15, 10),
             .AutoSize = True
         }
         panelAccesos.Controls.Add(lblTituloAccesos)
 
-        ' Botones de acceso rápido
+        ' ✅ MEJORADO: Agregar "DESCARGAR RECIBOS" a los accesos rápidos
         Dim accesosRapidos() As (String, Color, String) = {
             ("👥 Propietarios", colorSecundario, "propietarios"),
+            ("📥 Descargar Recibos", colorDescarga, "descargar_recibos"),
             ("📋 Estados", colorEstados, "estados"),
             ("📜 Historial", colorHistorial, "historial"),
             ("📝 Registro", colorPagosOscuro, "registro")
         }
 
+        Dim anchoBoton As Integer = 140
+        Dim espacioEntreBot As Integer = (panelAccesos.Width - 60 - (anchoBoton * 5)) \ 4
+
         For i = 0 To accesosRapidos.Length - 1
             Dim btnAcceso As New Button With {
                 .Text = accesosRapidos(i).Item1,
-                .Size = New Size(150, 35),
-                .Location = New Point(20 + i * 160, 35),
+                .Size = New Size(anchoBoton, 35),
+                .Location = New Point(30 + i * (anchoBoton + espacioEntreBot), 35),
                 .BackColor = accesosRapidos(i).Item2,
                 .ForeColor = Color.White,
                 .FlatStyle = FlatStyle.Flat,
@@ -335,18 +346,18 @@ Public Class COOPDIASAM
     End Sub
 
     Private Sub CrearTorresEnDashboard()
-        ' Título para torres
+        ' CORREGIDO: Título con posición fija después de los paneles anteriores
         Dim lblTorres As New Label With {
             .Text = "🏢 TORRES DEL CONJUNTO",
             .Font = New Font("Segoe UI", 12, FontStyle.Bold),
             .ForeColor = colorMenu,
-            .Location = New Point(20, 310),
+            .Location = New Point(30, 320),
             .AutoSize = True
         }
         panelContenido.Controls.Add(lblTorres)
 
-        ' Crear torres con el layout original pero optimizado
-        CrearTorresLayout("Ver Apartamentos", colorSecundario, colorPrimario, AddressOf Torre_Click, 330)
+        ' CORREGIDO: Crear torres con posición ajustada
+        CrearTorresLayout("Ver Apartamentos", colorSecundario, colorPrimario, AddressOf Torre_Click, 350)
     End Sub
 
     Private Sub CrearTorres()
@@ -359,19 +370,19 @@ Public Class COOPDIASAM
             .Font = New Font("Segoe UI", 14, FontStyle.Bold),
             .ForeColor = colorMenu,
             .AutoSize = True,
-            .Location = New Point(20, 20)
+            .Location = New Point(30, 20)
         }
         panelContenido.Controls.Add(lblSeccion)
 
         ' Línea divisoria
         Dim lineaDivisoria As New Panel With {
             .BackColor = colorPrimario,
-            .Size = New Size(panelContenido.Width - 40, 2),
-            .Location = New Point(20, lblSeccion.Location.Y + 30)
+            .Size = New Size(panelContenido.ClientSize.Width - 60, 3),
+            .Location = New Point(30, 55)
         }
         panelContenido.Controls.Add(lineaDivisoria)
 
-        ' Crear torres
+        ' CORREGIDO: Crear torres con más espacio desde arriba
         CrearTorresLayout("Ver Apartamentos", colorSecundario, colorPrimario, AddressOf Torre_Click, 100)
     End Sub
 
@@ -383,15 +394,16 @@ Public Class COOPDIASAM
         Dim espacioHorizontal As Integer = 30
         Dim espacioVertical As Integer = 30
 
-        ' Calcular posiciones
+        ' CORREGIDO: Calcular posiciones centradas correctamente
         Dim anchoTotalTorres As Integer = (torresWidth * torresPorFila) + (espacioHorizontal * (torresPorFila - 1))
-        Dim xStart As Integer = Math.Max(20, (panelContenido.Width - anchoTotalTorres) \ 2)
+        Dim anchoDisponible As Integer = panelContenido.ClientSize.Width - 60
+        Dim xStart As Integer = Math.Max(30, (anchoDisponible - anchoTotalTorres) \ 2 + 30)
 
         For i As Integer = 0 To nombres.Length - 1
             Dim fila As Integer = i \ torresPorFila
             Dim columna As Integer = i Mod torresPorFila
 
-            ' Panel contenedor para cada torre
+            ' Panel contenedor para cada torre - CORREGIDO: Posiciones exactas
             Dim panelTorre As New Panel With {
                 .Size = New Size(torresWidth, torresHeight),
                 .Location = New Point(xStart + columna * (torresWidth + espacioHorizontal),
@@ -412,7 +424,7 @@ Public Class COOPDIASAM
             }
             panelTorre.Controls.Add(lblTorre)
 
-            ' Información de la torre (con datos reales)
+            ' Información de la torre con manejo de errores mejorado
             Try
                 Dim resumenTorre = ApartamentoDAL.ObtenerResumenTorre(i + 1)
                 Dim totalApartamentos As Integer = Convert.ToInt32(resumenTorre("total_apartamentos"))
@@ -426,23 +438,23 @@ Public Class COOPDIASAM
                     .Font = New Font("Segoe UI", 9),
                     .ForeColor = Color.White,
                     .Location = New Point(10, 40),
-                    .Size = New Size(180, 60),
+                    .Size = New Size(torresWidth - 20, 60),
                     .TextAlign = ContentAlignment.TopLeft
                 }
                 panelTorre.Controls.Add(lblInfo)
             Catch
                 Dim lblInfo As New Label With {
-                    .Text = "5 Pisos" & Environment.NewLine & "20 Apartamentos",
+                    .Text = "20 Apartamentos" & Environment.NewLine & "5 Pisos",
                     .Font = New Font("Segoe UI", 9),
                     .ForeColor = Color.White,
-                    .Location = New Point((torresWidth - 160) \ 2, 50),
-                    .Size = New Size(160, 40),
+                    .Location = New Point(10, 50),
+                    .Size = New Size(torresWidth - 20, 40),
                     .TextAlign = ContentAlignment.MiddleCenter
                 }
                 panelTorre.Controls.Add(lblInfo)
             End Try
 
-            ' Botón de acción
+            ' Botón de acción - CORREGIDO: Posición relativa al panel
             Dim btn As New Button With {
                 .Text = textoBoton,
                 .Size = New Size(torresWidth - 20, 35),
@@ -461,8 +473,8 @@ Public Class COOPDIASAM
 
             panelContenido.Controls.Add(panelTorre)
 
-            ' Efectos hover dinámicos
-            Dim colorHover As Color = If(colorTorre = colorSecundario, colorPrimario, Color.FromArgb(46, 204, 113))
+            ' Efectos hover dinámicos - CORREGIDO: Colores más sutiles
+            Dim colorHover As Color = Color.FromArgb(Math.Min(255, colorTorre.R + 20), Math.Min(255, colorTorre.G + 20), Math.Min(255, colorTorre.B + 20))
             AddHandler panelTorre.MouseEnter, Sub(sender, e) panelTorre.BackColor = colorHover
             AddHandler panelTorre.MouseLeave, Sub(sender, e) panelTorre.BackColor = colorTorre
         Next
@@ -518,6 +530,7 @@ Public Class COOPDIASAM
         End If
     End Sub
 
+    ' ✅ MODIFICADO: Agregar caso para "descargar"
     Private Sub BotonMenu_Click(sender As Object, e As EventArgs)
         Dim boton As Button = CType(sender, Button)
 
@@ -535,7 +548,9 @@ Public Class COOPDIASAM
 
             Case "torres"
                 labelTitulo.Text = "GESTIÓN DE TORRES"
-                CrearTorres()
+                ' REMOVIDO: Ya no se crea la sección de torres separada
+                ' Los usuarios pueden acceder desde el Dashboard Principal
+                MessageBox.Show("Puede gestionar las torres desde el Dashboard Principal.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
             Case "propietarios"
                 labelTitulo.Text = "GESTIÓN DE PROPIETARIOS"
@@ -544,6 +559,10 @@ Public Class COOPDIASAM
             Case "pagos"
                 labelTitulo.Text = "CONTROL DE PAGOS"
                 MostrarSeccionPagos()
+
+            Case "descargar"  ' ✅ NUEVO
+                labelTitulo.Text = "DESCARGAR RECIBOS"
+                MostrarSeccionDescargarRecibos()
 
             Case "estados"
                 labelTitulo.Text = "ESTADOS DE CUENTA"
@@ -570,7 +589,7 @@ Public Class COOPDIASAM
         panelContenido.Left = 0
     End Sub
 
-    ' NUEVOS MÉTODOS PARA LAS NUEVAS SECCIONES
+    ' MÉTODOS PARA LAS SECCIONES
     Private Sub MostrarSeccionEstados()
         Try
             Dim formEstados As New FormEstados()
@@ -605,7 +624,6 @@ Public Class COOPDIASAM
         End Try
     End Sub
 
-    ' MÉTODOS EXISTENTES MEJORADOS
     Private Sub MostrarSeccionPropietarios()
         Try
             Dim formPropietarios As New FormPropietarios()
@@ -614,6 +632,18 @@ Public Class COOPDIASAM
             CargarEstadisticasGenerales()
         Catch ex As Exception
             MessageBox.Show($"Error al abrir el formulario de propietarios: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ' ✅ NUEVO: Método para mostrar la sección de descarga de recibos
+    Private Sub MostrarSeccionDescargarRecibos()
+        Try
+            Dim formDescarga As New FormDescargarRecibos()
+            formDescarga.ShowDialog()
+            ' Actualizar estadísticas después de cerrar el formulario
+            CargarEstadisticasGenerales()
+        Catch ex As Exception
+            MessageBox.Show($"Error al abrir módulo de descarga: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -627,19 +657,19 @@ Public Class COOPDIASAM
             .Font = New Font("Segoe UI", 14, FontStyle.Bold),
             .ForeColor = colorMenu,
             .AutoSize = True,
-            .Location = New Point(20, 20)
+            .Location = New Point(30, 20)
         }
         panelContenido.Controls.Add(lblSeccion)
 
         ' Línea divisoria
         Dim lineaDivisoria As New Panel With {
             .BackColor = colorPagos,
-            .Size = New Size(panelContenido.Width - 40, 2),
-            .Location = New Point(20, lblSeccion.Location.Y + 30)
+            .Size = New Size(panelContenido.ClientSize.Width - 60, 3),
+            .Location = New Point(30, 55)
         }
         panelContenido.Controls.Add(lineaDivisoria)
 
-        ' Crear torres para pagos con diseño verde
+        ' CORREGIDO: Crear torres para pagos con posición Y más baja
         CrearTorresLayout("💰 Registrar Pagos", colorPagos, colorPagosOscuro, AddressOf TorrePagos_Click, 100)
     End Sub
 
@@ -653,65 +683,114 @@ Public Class COOPDIASAM
             .Font = New Font("Segoe UI", 14, FontStyle.Bold),
             .ForeColor = colorMenu,
             .AutoSize = True,
-            .Location = New Point(20, 20)
+            .Location = New Point(30, 20)
         }
         panelContenido.Controls.Add(lblSeccion)
 
+        ' Línea divisoria
+        Dim lineaDivisoria As New Panel With {
+            .BackColor = colorPrimario,
+            .Size = New Size(panelContenido.ClientSize.Width - 60, 3),
+            .Location = New Point(30, 55)
+        }
+        panelContenido.Controls.Add(lineaDivisoria)
+
         ' Panel de configuraciones
         Dim panelConfig As New Panel With {
-            .Location = New Point(20, 70),
-            .Size = New Size(panelContenido.Width - 40, 400),
+            .Location = New Point(30, 80),
+            .Size = New Size(panelContenido.ClientSize.Width - 60, 400),
             .BackColor = Color.White,
             .BorderStyle = BorderStyle.FixedSingle
         }
         panelContenido.Controls.Add(panelConfig)
 
-        ' Botón configuración SMTP
+        ' MEJORADO: Botones centrados y organizados
+        Dim anchoBoton As Integer = 180
+        Dim altoBoton As Integer = 45
+        Dim espacioVertical As Integer = 20
+        Dim espacioHorizontal As Integer = 30
+
+        ' Calcular posición centrada para 2 columnas
+        Dim anchoPanelConfig As Integer = panelConfig.Width
+        Dim anchoTotalBotones As Integer = (anchoBoton * 2) + espacioHorizontal
+        Dim xStart As Integer = (anchoPanelConfig - anchoTotalBotones) \ 2
+
+        ' Fila 1: SMTP y Backup
         Dim btnSMTP As New Button With {
             .Text = "📧 Configurar Correo SMTP",
-            .Size = New Size(200, 40),
-            .Location = New Point(20, 20),
+            .Size = New Size(anchoBoton, altoBoton),
+            .Location = New Point(xStart, 30),
             .BackColor = colorPrimario,
             .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
         }
         btnSMTP.FlatAppearance.BorderSize = 0
         AddHandler btnSMTP.Click, AddressOf btnSMTP_Click
         panelConfig.Controls.Add(btnSMTP)
 
-        ' Botón backup manual
         Dim btnBackupManual As New Button With {
             .Text = "💾 Realizar Backup",
-            .Size = New Size(200, 40),
-            .Location = New Point(240, 20),
+            .Size = New Size(anchoBoton, altoBoton),
+            .Location = New Point(xStart + anchoBoton + espacioHorizontal, 30),
             .BackColor = colorEstados,
             .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
         }
         btnBackupManual.FlatAppearance.BorderSize = 0
         AddHandler btnBackupManual.Click, AddressOf btnBackupManual_Click
         panelConfig.Controls.Add(btnBackupManual)
 
-        ' Botón verificar integridad
+        ' Fila 2: Integridad y Actualización
         Dim btnIntegridad As New Button With {
             .Text = "🔍 Verificar Integridad BD",
-            .Size = New Size(200, 40),
-            .Location = New Point(20, 80),
+            .Size = New Size(anchoBoton, altoBoton),
+            .Location = New Point(xStart, 30 + altoBoton + espacioVertical),
             .BackColor = colorHistorial,
             .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
         }
         btnIntegridad.FlatAppearance.BorderSize = 0
         AddHandler btnIntegridad.Click, AddressOf btnIntegridad_Click
         panelConfig.Controls.Add(btnIntegridad)
+
+        ' NUEVO: Botón de Actualización
+        Dim btnActualizacion As New Button With {
+            .Text = "🔄 Actualización del Sistema",
+            .Size = New Size(anchoBoton, altoBoton),
+            .Location = New Point(xStart + anchoBoton + espacioHorizontal, 30 + altoBoton + espacioVertical),
+            .BackColor = Color.FromArgb(46, 204, 113),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+        }
+        btnActualizacion.FlatAppearance.BorderSize = 0
+        AddHandler btnActualizacion.Click, AddressOf btnActualizacion_Click
+        panelConfig.Controls.Add(btnActualizacion)
+
+        ' Información adicional
+        Dim lblInfo As New Label With {
+            .Text = "💡 Configuraciones avanzadas del sistema COOPDIASAM" & Environment.NewLine &
+                   "Utilice estas herramientas para mantener el sistema actualizado y funcionando correctamente.",
+            .Font = New Font("Segoe UI", 9, FontStyle.Italic),
+            .ForeColor = Color.Gray,
+            .Location = New Point(20, 160),
+            .Size = New Size(panelConfig.Width - 40, 60),
+            .TextAlign = ContentAlignment.TopCenter
+        }
+        panelConfig.Controls.Add(lblInfo)
     End Sub
 
-    ' NUEVOS EVENTOS
+    ' ✅ MODIFICADO: Evento de accesos rápidos con "descargar_recibos"
     Private Sub AccesoRapido_Click(sender As Object, e As EventArgs)
         Dim boton As Button = CType(sender, Button)
         Select Case boton.Tag.ToString()
             Case "propietarios"
                 MostrarSeccionPropietarios()
+            Case "descargar_recibos"  ' ✅ NUEVO
+                MostrarSeccionDescargarRecibos()
             Case "estados"
                 MostrarSeccionEstados()
             Case "historial"
@@ -748,6 +827,18 @@ Public Class COOPDIASAM
             MessageBox.Show($"Error al verificar integridad: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         Finally
             Me.Cursor = Cursors.Default
+        End Try
+    End Sub
+
+    Private Sub btnActualizacion_Click(sender As Object, e As EventArgs)
+        Try
+            ' PLACEHOLDER: Función de actualización para implementar más adelante
+            MessageBox.Show("Función de actualización del sistema." & Environment.NewLine &
+                          "Esta característica se implementará en una versión futura." & Environment.NewLine &
+                          "Versión actual: v2025.1",
+                          "Actualización del Sistema", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch ex As Exception
+            MessageBox.Show($"Error en actualización: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

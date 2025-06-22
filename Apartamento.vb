@@ -42,7 +42,7 @@ Public Class Apartamento
 
     ' Método para obtener el código completo del apartamento
     Public Function ObtenerCodigoApartamento() As String
-        Return $"T{Torre}-{Piso}{NumeroApartamento}"
+        Return $"T{Torre}-{NumeroApartamento}"
     End Function
 
     ' Método para obtener el estado de cuenta

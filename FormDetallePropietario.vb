@@ -84,7 +84,6 @@ Public Class FormDetallePropietario
 
         ' Nombre del Residente
         CrearCampo("Nombre Residente:", txtNombreResidente, yPos)
-        txtNombreResidente.Size = New Size(270, 25) ' Hacer más ancho para nombres largos
         yPos += 40
 
         ' Teléfono
@@ -93,7 +92,6 @@ Public Class FormDetallePropietario
 
         ' Correo
         CrearCampo("Correo:", txtCorreo, yPos)
-        txtCorreo.Size = New Size(270, 25) ' Hacer más ancho para correos largos
         yPos += 40
 
         ' Matrícula Inmobiliaria

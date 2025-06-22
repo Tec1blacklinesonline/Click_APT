@@ -1,12 +1,12 @@
 ﻿' Software ClikApt 20250603
 
-
 Public Class Inicio
     Private WithEvents btnLogin As New Button()
     Private WithEvents btnSalir As New Button() ' Nuevo botón Salir
     Private txtUsuario As New TextBox()
     Private txtPassword As New TextBox()
     Private lblEstadoConexion As New Label()
+
 
     Private Sub Inicio_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Configuración del formulario
@@ -72,10 +72,10 @@ Public Class Inicio
         ' Probar conexión al cargar
         If ConexionBD.ProbarConexion() Then
             lblEstadoConexion.ForeColor = Color.Green
-            lblEstadoConexion.Text = "✔ Conectado a internet"
+            lblEstadoConexion.Text = "✔ Conectado a la base de datos"
         Else
             lblEstadoConexion.ForeColor = Color.Red
-            lblEstadoConexion.Text = "✖ No se pudo conectar a internet"
+            lblEstadoConexion.Text = "✖ No se pudo conectar a la base de datos"
             btnLogin.Enabled = False
         End If
     End Sub
@@ -97,10 +97,19 @@ Public Class Inicio
         ' Intentar iniciar sesión
         Try
             If ConexionBD.ValidarUsuario(txtUsuario.Text, txtPassword.Text) Then
-                ' Inicio de sesión exitoso, abrir COOPDIASAM
-                Me.Hide()
-                Dim formPrincipal As New COOPDIASAM()
-                formPrincipal.Show()
+                ' SOLUCIÓN: Establecer el usuario actual en la sesión
+                ConexionBD.EstablecerUsuarioActual(txtUsuario.Text)
+
+                ' Verificar que se estableció correctamente
+                Dim usuarioEstablecido = ConexionBD.ObtenerUsuarioActual()
+                If usuarioEstablecido IsNot Nothing Then
+                    ' Inicio de sesión exitoso, abrir COOPDIASAM
+                    Me.Hide()
+                    Dim formPrincipal As New COOPDIASAM()
+                    formPrincipal.Show()
+                Else
+                    MessageBox.Show("Error al establecer la sesión del usuario", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End If
             Else
                 MessageBox.Show("Credenciales incorrectas", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 txtPassword.SelectAll()
@@ -115,5 +124,7 @@ Public Class Inicio
     Private Sub btnSalir_Click(sender As Object, e As EventArgs) Handles btnSalir.Click
         Application.ExitThread() ' Cierra todos los hilos y la aplicación inmediatamente
     End Sub
+
+
 
 End Class

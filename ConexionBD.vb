@@ -20,8 +20,8 @@ Public Class ConexionBD
             Using conexion As SQLiteConnection = ObtenerConexion()
                 conexion.Open()
 
-                ' NUEVO: Verificar si las tablas principales existen
-                Dim tablasRequeridas As String() = {"Apartamentos", "pagos", "Usuarios", "Torres", "cuotas_generadas_apartamento"}
+                ' ACTUALIZADO: Verificar si las tablas principales existen según tu nueva estructura
+                Dim tablasRequeridas As String() = {"Apartamentos", "pagos", "Usuarios", "Torres", "cuotas_generadas_apartamento", "Asambleas"}
                 For Each tabla In tablasRequeridas
                     If Not VerificarTablaExiste(conexion, tabla) Then
                         MessageBox.Show($"Error: La tabla '{tabla}' no existe en la base de datos.", "Error de Estructura", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -179,7 +179,18 @@ Public Class ConexionBD
     ' 🆕 NUEVO: Registra una actividad en el histórico de cambios
     Public Shared Sub RegistrarActividad(nombreUsuario As String, tablaAfectada As String, idRegistro As Integer, tipoCambio As String, detalle As String)
         Try
-            HistoricoCambiosDAL.RegistrarCambio(tablaAfectada, idRegistro, tipoCambio, nombreUsuario, detalle)
+            Using conexion As SQLiteConnection = ObtenerConexion()
+                conexion.Open()
+                Dim consulta As String = "INSERT INTO [historico cambios] (tabla_afectada, id_registro, tipo_cambio, fecha_cambio, usuario_responsable, detalle_cambio) VALUES (@tabla, @id, @tipo, date('now'), @usuario, @detalle)"
+                Using comando As New SQLiteCommand(consulta, conexion)
+                    comando.Parameters.AddWithValue("@tabla", tablaAfectada)
+                    comando.Parameters.AddWithValue("@id", idRegistro)
+                    comando.Parameters.AddWithValue("@tipo", tipoCambio)
+                    comando.Parameters.AddWithValue("@usuario", nombreUsuario)
+                    comando.Parameters.AddWithValue("@detalle", detalle)
+                    comando.ExecuteNonQuery()
+                End Using
+            End Using
         Catch ex As Exception
             ' No es crítico si falla el registro de actividad
             System.Diagnostics.Debug.WriteLine($"Error al registrar actividad: {ex.Message}")
@@ -210,7 +221,7 @@ Public Class ConexionBD
         End Try
     End Function
 
-    ' 🆕 NUEVO: Obtiene estadísticas generales de la base de datos
+    ' 🆕 ACTUALIZADO: Obtiene estadísticas generales de la base de datos
     Public Shared Function ObtenerEstadisticasGenerales() As Dictionary(Of String, Object)
         Dim estadisticas As New Dictionary(Of String, Object)
 
@@ -248,6 +259,18 @@ Public Class ConexionBD
                     estadisticas("cuotas_pendientes") = Convert.ToInt32(comando.ExecuteScalar())
                 End Using
 
+                ' Total de asambleas
+                Dim consultaAsambleas As String = "SELECT COUNT(*) FROM Asambleas"
+                Using comando As New SQLiteCommand(consultaAsambleas, conexion)
+                    estadisticas("total_asambleas") = Convert.ToInt32(comando.ExecuteScalar())
+                End Using
+
+                ' Torres registradas
+                Dim consultaTorres As String = "SELECT COUNT(*) FROM Torres"
+                Using comando As New SQLiteCommand(consultaTorres, conexion)
+                    estadisticas("total_torres") = Convert.ToInt32(comando.ExecuteScalar())
+                End Using
+
             End Using
         Catch ex As Exception
             ' En caso de error, devolver valores por defecto
@@ -256,6 +279,8 @@ Public Class ConexionBD
             estadisticas("pagos_mes_actual") = 0
             estadisticas("recaudacion_mes_actual") = 0
             estadisticas("cuotas_pendientes") = 0
+            estadisticas("total_asambleas") = 0
+            estadisticas("total_torres") = 0
         End Try
 
         Return estadisticas

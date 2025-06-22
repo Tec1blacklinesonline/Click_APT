@@ -9,133 +9,210 @@ Public Class FormPropietarios
     Private lblBuscador As Label
     Private txtBuscador As TextBox
     Private btnLimpiar As Button
-    Private btnAgregar As Button
     Private btnEditar As Button
     Private btnVolver As Button
+    Private lblEstadisticas As Label
     Private listaCompletaApartamentos As List(Of Apartamento)
 
     Private Sub FormPropietarios_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        Me.Text = "Gestión de Propietarios"
-        Me.Size = New Size(1200, 700)
-        Me.StartPosition = FormStartPosition.CenterScreen
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle
-        Me.MaximizeBox = False
-        Me.BackColor = Color.FromArgb(240, 240, 240)
-
         ConfigurarFormulario()
         CargarPropietarios()
     End Sub
 
     Private Sub ConfigurarFormulario()
-        ' Título del formulario
-        lblTitulo = New Label() With {
-            .Text = "Listado y Gestión de Propietarios",
-            .Font = New Font("Segoe UI", 16, FontStyle.Bold),
-            .ForeColor = Color.FromArgb(41, 128, 185),
-            .AutoSize = True,
-            .Location = New Point(20, 20)
-        }
-        Me.Controls.Add(lblTitulo)
+        Try
+            ' Configuración de ventana completa - MISMO ESTILO
+            Me.Text = "Propietarios - COOPDIASAM"
+            Me.WindowState = FormWindowState.Maximized
+            Me.StartPosition = FormStartPosition.CenterScreen
+            Me.MinimumSize = New Size(1400, 700)
+            Me.MaximizeBox = True
+            Me.MinimizeBox = True
+            Me.FormBorderStyle = FormBorderStyle.Sizable
 
+            ' Panel superior con mejor diseño - MISMO COLOR AZUL
+            Dim panelSuperior As New Panel()
+            panelSuperior.Dock = DockStyle.Top
+            panelSuperior.Height = 80
+            panelSuperior.BackColor = Color.FromArgb(46, 132, 188)
+
+            lblTitulo = New Label()
+            lblTitulo.Text = "📊 GESTIÓN DE PROPIETARIOS"
+            lblTitulo.Font = New Font("Segoe UI", 20, FontStyle.Bold)
+            lblTitulo.ForeColor = Color.White
+            lblTitulo.AutoSize = True
+            lblTitulo.Location = New Point(30, 25)
+            panelSuperior.Controls.Add(lblTitulo)
+
+            ' Panel inferior para el botón VOLVER - CENTRADO ABAJO
+            Dim panelInferior As New Panel()
+            panelInferior.Dock = DockStyle.Bottom
+            panelInferior.Height = 60
+            panelInferior.BackColor = Color.FromArgb(44, 62, 80)  ' MISMO COLOR DE LAS COLUMNAS
+
+            btnVolver = New Button()
+            btnVolver.Text = "⬅️ VOLVER"
+            btnVolver.Size = New Size(140, 40)
+            btnVolver.BackColor = Color.FromArgb(44, 62, 80)  ' MISMO COLOR DE LAS COLUMNAS
+            btnVolver.ForeColor = Color.White
+            btnVolver.FlatStyle = FlatStyle.Flat
+            btnVolver.Cursor = Cursors.Hand
+            btnVolver.Font = New Font("Segoe UI", 10, FontStyle.Bold)  ' FUENTE MÁS PEQUEÑA
+            btnVolver.FlatAppearance.BorderSize = 1
+            btnVolver.FlatAppearance.BorderColor = Color.White
+            btnVolver.FlatAppearance.MouseOverBackColor = Color.FromArgb(52, 73, 94)
+            btnVolver.Anchor = AnchorStyles.None  ' CENTRADO
+
+            ' EVENTO PARA MANTENERLO CENTRADO
+            AddHandler btnVolver.Click, AddressOf btnVolver_Click
+            AddHandler Me.Resize, Sub() btnVolver.Location = New Point((Me.Width - btnVolver.Width) \ 2, 10)
+            btnVolver.Location = New Point((Me.Width - btnVolver.Width) \ 2, 10)
+            panelInferior.Controls.Add(btnVolver)
+
+            ' Configurar panel principal
+            ConfigurarPanelPrincipal()
+
+            ' Agregar controles al formulario
+            Me.Controls.Add(panelSuperior)
+            Me.Controls.Add(panelInferior)
+
+        Catch ex As Exception
+            MessageBox.Show("Error en ConfigurarFormulario: " & ex.Message, "Error",
+                       MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub ConfigurarPanelPrincipal()
+
+        ' Panel de filtros con mejor organización y altura aumentada
+        Dim panelFiltros As New Panel()
+        panelFiltros.Dock = DockStyle.Top
+        panelFiltros.Height = 180  ' AUMENTADO PARA ACOMODAR TODO
+        panelFiltros.BackColor = Color.FromArgb(248, 249, 250)
+        panelFiltros.Padding = New Padding(30)
+
+        ' === PRIMERA FILA DE CONTROLES ===
         ' Label del buscador
-        lblBuscador = New Label() With {
-            .Text = "Buscar por Apartamento (ej: 1202 para Torre 1, Apt 202):",
-            .Font = New Font("Segoe UI", 10, FontStyle.Regular),
-            .ForeColor = Color.FromArgb(52, 73, 94),
-            .AutoSize = True,
-            .Location = New Point(20, 60)
-        }
-        Me.Controls.Add(lblBuscador)
+        lblBuscador = New Label()
+        lblBuscador.Text = "Buscar por Apartamento (ej: 1202 para Torre 1, Apt 202):"
+        lblBuscador.Location = New Point(30, 20)
+        lblBuscador.Size = New Size(400, 25)
+        lblBuscador.Font = New Font("Segoe UI", 11, FontStyle.Italic)
+        lblBuscador.ForeColor = Color.FromArgb(52, 73, 94)
+        lblBuscador.TextAlign = ContentAlignment.MiddleLeft
+        panelFiltros.Controls.Add(lblBuscador)
 
         ' TextBox del buscador
-        txtBuscador = New TextBox() With {
-            .Location = New Point(20, 85),
-            .Size = New Size(250, 25),
-            .Font = New Font("Segoe UI", 10),
-            .BorderStyle = BorderStyle.FixedSingle
-        }
+        txtBuscador = New TextBox()
+        txtBuscador.Location = New Point(30, 55)
+        txtBuscador.Size = New Size(300, 30)
+        txtBuscador.Font = New Font("Segoe UI", 11)
+        txtBuscador.BorderStyle = BorderStyle.FixedSingle
         AddHandler txtBuscador.TextChanged, AddressOf txtBuscador_TextChanged
-        Me.Controls.Add(txtBuscador)
+        panelFiltros.Controls.Add(txtBuscador)
 
         ' Botón Limpiar búsqueda
-        btnLimpiar = New Button() With {
-            .Text = "Limpiar",
-            .Size = New Size(80, 25),
-            .Location = New Point(280, 85),
-            .BackColor = Color.FromArgb(149, 165, 166),
-            .ForeColor = Color.White,
-            .Font = New Font("Segoe UI", 9, FontStyle.Regular),
-            .FlatStyle = FlatStyle.Flat
-        }
+        btnLimpiar = New Button()
+        btnLimpiar.Text = "🧹 LIMPIAR"
+        btnLimpiar.Location = New Point(340, 55)
+        btnLimpiar.Size = New Size(120, 30)
+        btnLimpiar.BackColor = Color.FromArgb(149, 165, 166)
+        btnLimpiar.ForeColor = Color.White
+        btnLimpiar.FlatStyle = FlatStyle.Flat
+        btnLimpiar.Cursor = Cursors.Hand
+        btnLimpiar.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         btnLimpiar.FlatAppearance.BorderSize = 0
+        btnLimpiar.FlatAppearance.MouseOverBackColor = Color.FromArgb(127, 140, 141)
         AddHandler btnLimpiar.Click, AddressOf btnLimpiar_Click
-        Me.Controls.Add(btnLimpiar)
+        panelFiltros.Controls.Add(btnLimpiar)
 
-        ' DataGridView para mostrar los apartamentos/propietarios
-        dgvPropietarios = New DataGridView()
-        With dgvPropietarios
-            .Location = New Point(20, 125)
-            .Size = New Size(Me.ClientSize.Width - 40, Me.ClientSize.Height - 235)
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Bottom
-            .ReadOnly = True
-            .AllowUserToAddRows = False
-            .AllowUserToDeleteRows = False
-            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None
-            .SelectionMode = DataGridViewSelectionMode.FullRowSelect
-            .BackgroundColor = Color.White
-            .BorderStyle = BorderStyle.None
-            .ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(41, 128, 185)
-            .ColumnHeadersDefaultCellStyle.ForeColor = Color.White
-            .ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 9, FontStyle.Bold)
-            .EnableHeadersVisualStyles = False
-            .ColumnHeadersHeight = 35
-        End With
-        Me.Controls.Add(dgvPropietarios)
-
-        ' Botón Agregar
-        btnAgregar = New Button() With {
-            .Text = "Agregar Nuevo",
-            .Size = New Size(120, 40),
-            .Location = New Point(20, dgvPropietarios.Bottom + 20),
-            .BackColor = Color.FromArgb(39, 174, 96),
-            .ForeColor = Color.White,
-            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat,
-            .Anchor = AnchorStyles.Bottom Or AnchorStyles.Left
-        }
-        btnAgregar.FlatAppearance.BorderSize = 0
-        AddHandler btnAgregar.Click, AddressOf btnAgregar_Click
-        Me.Controls.Add(btnAgregar)
-
-        ' Botón Editar
-        btnEditar = New Button() With {
-            .Text = "Editar",
-            .Size = New Size(100, 40),
-            .Location = New Point(150, dgvPropietarios.Bottom + 20),
-            .BackColor = Color.FromArgb(243, 156, 18),
-            .ForeColor = Color.White,
-            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat,
-            .Anchor = AnchorStyles.Bottom Or AnchorStyles.Left
-        }
+        ' === SEGUNDA FILA - BOTÓN EDITAR ===
+        btnEditar = New Button()
+        btnEditar.Text = "✏️ EDITAR"
+        btnEditar.Location = New Point(30, 100)
+        btnEditar.Size = New Size(180, 45)
+        btnEditar.BackColor = Color.FromArgb(231, 76, 60) ' Mismo color base
+        btnEditar.ForeColor = Color.White
+        btnEditar.FlatStyle = FlatStyle.Flat
+        btnEditar.Cursor = Cursors.Hand
+        btnEditar.Font = New Font("Segoe UI", 11, FontStyle.Bold)
         btnEditar.FlatAppearance.BorderSize = 0
+        btnEditar.FlatAppearance.MouseOverBackColor = Color.FromArgb(192, 57, 43) ' Mismo color hover
         AddHandler btnEditar.Click, AddressOf btnEditar_Click
-        Me.Controls.Add(btnEditar)
+        panelFiltros.Controls.Add(btnEditar)
+        btnEditar.TextAlign = ContentAlignment.MiddleCenter
+        btnEditar.Padding = New Padding(10, 0, 0, 0) ' Mueve el texto un poco a la derecha
 
-        ' Botón Volver
-        btnVolver = New Button() With {
-            .Text = "Volver",
-            .Size = New Size(100, 40),
-            .Location = New Point(260, dgvPropietarios.Bottom + 20),
-            .BackColor = Color.FromArgb(52, 73, 94),
-            .ForeColor = Color.White,
-            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat,
-            .Anchor = AnchorStyles.Bottom Or AnchorStyles.Left
-        }
-        btnVolver.FlatAppearance.BorderSize = 0
-        AddHandler btnVolver.Click, AddressOf btnVolver_Click
-        Me.Controls.Add(btnVolver)
+
+        ' === PANEL DE ESTADÍSTICAS VERTICAL Y MÁS GRANDE ===
+        lblEstadisticas = New Label()
+        lblEstadisticas.Location = New Point(220, 100)
+        lblEstadisticas.Size = New Size(300, 45)  ' MÁS ANCHO PARA EVITAR ESPACIO EN BLANCO
+        lblEstadisticas.Font = New Font("Segoe UI", 10, FontStyle.Regular)  ' FUENTE MÁS GRANDE
+        lblEstadisticas.ForeColor = Color.FromArgb(44, 62, 80)
+        lblEstadisticas.Text = "📊 Seleccione un apartamento para ver detalles del propietario"
+        lblEstadisticas.BackColor = Color.FromArgb(236, 240, 241)
+        lblEstadisticas.BorderStyle = BorderStyle.FixedSingle
+        lblEstadisticas.TextAlign = ContentAlignment.TopLeft
+        lblEstadisticas.Padding = New Padding(15, 8, 15, 8)
+        lblEstadisticas.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right  ' ANCLAJE PARA OCUPAR TODO EL ANCHO
+        panelFiltros.Controls.Add(lblEstadisticas)
+
+        ' DataGridView principal
+        dgvPropietarios = New DataGridView()
+        dgvPropietarios.Dock = DockStyle.Fill
+        dgvPropietarios.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None  ' CAMBIADO PARA CONTROL MANUAL
+        dgvPropietarios.SelectionMode = DataGridViewSelectionMode.FullRowSelect
+        dgvPropietarios.ReadOnly = True
+        dgvPropietarios.AllowUserToAddRows = False
+        dgvPropietarios.AllowUserToDeleteRows = False
+        dgvPropietarios.BackgroundColor = Color.White
+        dgvPropietarios.BorderStyle = BorderStyle.None
+        dgvPropietarios.RowHeadersVisible = False
+        dgvPropietarios.Font = New Font("Segoe UI", 8.5F)
+        dgvPropietarios.ScrollBars = ScrollBars.Both
+        dgvPropietarios.AllowUserToResizeColumns = True
+        dgvPropietarios.MultiSelect = False
+        ' Evento para actualizar estadísticas al seleccionar
+        AddHandler dgvPropietarios.SelectionChanged, AddressOf dgvPropietarios_SelectionChanged
+        ConfigurarDataGridView(dgvPropietarios)
+
+        ' Agregar al formulario
+        Me.Controls.Add(dgvPropietarios)
+        Me.Controls.Add(panelFiltros)
+    End Sub
+
+    Private Sub ConfigurarDataGridView(dgv As DataGridView)
+        ' Configuración visual moderna y profesional - CABECERAS CORREGIDAS
+        dgv.EnableHeadersVisualStyles = False
+
+        ' Encabezados con diseño moderno - LETRAS MÁS PEQUEÑAS
+        dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(44, 62, 80)
+        dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White
+        dgv.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 8, FontStyle.Bold)  ' FUENTE MÁS PEQUEÑA
+        dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+        dgv.ColumnHeadersDefaultCellStyle.Padding = New Padding(3, 8, 3, 8)  ' PADDING REDUCIDO
+        dgv.ColumnHeadersHeight = 35  ' ALTURA REDUCIDA
+
+        ' Estilo de celdas mejorado - LETRAS MÁS PEQUEÑAS
+        dgv.DefaultCellStyle.Font = New Font("Segoe UI", 8.5F)  ' FUENTE MÁS PEQUEÑA
+        dgv.DefaultCellStyle.Padding = New Padding(6, 4, 6, 4)  ' PADDING REDUCIDO
+        dgv.DefaultCellStyle.BackColor = Color.White
+        dgv.DefaultCellStyle.ForeColor = Color.FromArgb(52, 73, 94)
+        dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(52, 152, 219)
+        dgv.DefaultCellStyle.SelectionForeColor = Color.White
+
+        ' Filas alternadas con color suave
+        dgv.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 249, 250)
+        dgv.AlternatingRowsDefaultCellStyle.ForeColor = Color.FromArgb(52, 73, 94)
+
+        ' Configuración de filas y bordes - FILAS MÁS PEQUEÑAS
+        dgv.RowTemplate.Height = 32  ' FILAS MÁS PEQUEÑAS
+        dgv.GridColor = Color.FromArgb(189, 195, 199)
+        dgv.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
+        dgv.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single  ' BORDES VISIBLES
+        dgv.MultiSelect = False
+        dgv.AutoGenerateColumns = True
     End Sub
 
     Private Sub CargarPropietarios(Optional filtroApartamento As String = "")
@@ -151,65 +228,149 @@ Public Class FormPropietarios
                 End If
 
                 dgvPropietarios.DataSource = listaFiltrada
+                FormatearColumnas()
+                ActualizarEstadisticas(listaFiltrada)
 
-                ' Configurar visibilidad y nombres de columnas con anchos específicos
-                If dgvPropietarios.Columns.Contains("IdApartamento") Then dgvPropietarios.Columns("IdApartamento").Visible = False
-
-                If dgvPropietarios.Columns.Contains("Torre") Then
-                    dgvPropietarios.Columns("Torre").HeaderText = "Torre"
-                    dgvPropietarios.Columns("Torre").Width = 60
-                End If
-
-                If dgvPropietarios.Columns.Contains("Piso") Then
-                    dgvPropietarios.Columns("Piso").HeaderText = "Piso"
-                    dgvPropietarios.Columns("Piso").Width = 60
-                End If
-
-                If dgvPropietarios.Columns.Contains("NumeroApartamento") Then
-                    dgvPropietarios.Columns("NumeroApartamento").HeaderText = "Apartamento"
-                    dgvPropietarios.Columns("NumeroApartamento").Width = 90
-                End If
-
-                If dgvPropietarios.Columns.Contains("NombreResidente") Then
-                    dgvPropietarios.Columns("NombreResidente").HeaderText = "Nombre Residente"
-                    dgvPropietarios.Columns("NombreResidente").Width = 200
-                End If
-
-                If dgvPropietarios.Columns.Contains("Correo") Then
-                    dgvPropietarios.Columns("Correo").HeaderText = "Correo Electrónico"
-                    dgvPropietarios.Columns("Correo").Width = 220
-                End If
-
-                If dgvPropietarios.Columns.Contains("Telefono") Then
-                    dgvPropietarios.Columns("Telefono").HeaderText = "Teléfono"
-                    dgvPropietarios.Columns("Telefono").Width = 100
-                End If
-
-                If dgvPropietarios.Columns.Contains("MatriculaInmobiliaria") Then
-                    dgvPropietarios.Columns("MatriculaInmobiliaria").HeaderText = "Matrícula Inmobiliaria"
-                    dgvPropietarios.Columns("MatriculaInmobiliaria").Width = 150
-                End If
-
-                ' Ocultar columnas no relevantes
-                If dgvPropietarios.Columns.Contains("Activo") Then dgvPropietarios.Columns("Activo").Visible = False
-                If dgvPropietarios.Columns.Contains("FechaRegistro") Then dgvPropietarios.Columns("FechaRegistro").Visible = False
-                If dgvPropietarios.Columns.Contains("SaldoActual") Then dgvPropietarios.Columns("SaldoActual").Visible = False
-                If dgvPropietarios.Columns.Contains("EstadoCuenta") Then dgvPropietarios.Columns("EstadoCuenta").Visible = False
-                If dgvPropietarios.Columns.Contains("UltimoPago") Then dgvPropietarios.Columns("UltimoPago").Visible = False
-                If dgvPropietarios.Columns.Contains("TieneUltimoPago") Then dgvPropietarios.Columns("TieneUltimoPago").Visible = False
-                If dgvPropietarios.Columns.Contains("DiasEnMora") Then dgvPropietarios.Columns("DiasEnMora").Visible = False
-                If dgvPropietarios.Columns.Contains("TotalIntereses") Then dgvPropietarios.Columns("TotalIntereses").Visible = False
-
-                ' Hacer que la última columna visible se ajuste al espacio restante
-                For i As Integer = dgvPropietarios.Columns.Count - 1 To 0 Step -1
-                    If dgvPropietarios.Columns(i).Visible Then
-                        dgvPropietarios.Columns(i).AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
-                        Exit For
-                    End If
-                Next
             End If
         Catch ex As Exception
             MessageBox.Show($"Error al cargar la lista de propietarios: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub FormatearColumnas()
+        If dgvPropietarios.Columns.Count > 0 Then
+            ' Ocultar columnas no relevantes
+            If dgvPropietarios.Columns.Contains("IdApartamento") Then dgvPropietarios.Columns("IdApartamento").Visible = False
+
+            ' Configurar columnas visibles con iconos y anchos específicos
+            If dgvPropietarios.Columns.Contains("Torre") Then
+                dgvPropietarios.Columns("Torre").HeaderText = "🏢 TORRE"
+                dgvPropietarios.Columns("Torre").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+                dgvPropietarios.Columns("Torre").DefaultCellStyle.Font = New Font("Segoe UI", 8, FontStyle.Bold)
+                dgvPropietarios.Columns("Torre").Width = 90  ' MÁS ANGOSTA
+                dgvPropietarios.Columns("Torre").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            End If
+
+            If dgvPropietarios.Columns.Contains("Piso") Then
+                dgvPropietarios.Columns("Piso").HeaderText = "🏠 PISO"
+                dgvPropietarios.Columns("Piso").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+                dgvPropietarios.Columns("Piso").DefaultCellStyle.Font = New Font("Segoe UI", 8, FontStyle.Bold)
+                dgvPropietarios.Columns("Piso").Width = 90  ' MÁS ANGOSTA
+                dgvPropietarios.Columns("Piso").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            End If
+
+            If dgvPropietarios.Columns.Contains("NumeroApartamento") Then
+                dgvPropietarios.Columns("NumeroApartamento").HeaderText = "🚪 APARTAMENTO"
+                dgvPropietarios.Columns("NumeroApartamento").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+                dgvPropietarios.Columns("NumeroApartamento").DefaultCellStyle.Font = New Font("Consolas", 8, FontStyle.Bold)
+                dgvPropietarios.Columns("NumeroApartamento").Width = 120  ' ANCHO FIJO
+                dgvPropietarios.Columns("NumeroApartamento").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            End If
+
+            If dgvPropietarios.Columns.Contains("NombreResidente") Then
+                dgvPropietarios.Columns("NombreResidente").HeaderText = "👤 NOMBRE RESIDENTE"
+                dgvPropietarios.Columns("NombreResidente").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
+                dgvPropietarios.Columns("NombreResidente").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                dgvPropietarios.Columns("NombreResidente").FillWeight = 150  ' 40% del espacio restante
+            End If
+
+            If dgvPropietarios.Columns.Contains("Correo") Then
+                dgvPropietarios.Columns("Correo").HeaderText = "📧 CORREO ELECTRÓNICO"
+                dgvPropietarios.Columns("Correo").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
+                dgvPropietarios.Columns("Correo").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                dgvPropietarios.Columns("Correo").FillWeight = 150  ' 40% del espacio restante
+            End If
+
+            If dgvPropietarios.Columns.Contains("Telefono") Then
+                dgvPropietarios.Columns("Telefono").HeaderText = "📱 TELÉFONO"
+                dgvPropietarios.Columns("Telefono").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+                dgvPropietarios.Columns("Telefono").DefaultCellStyle.Font = New Font("Consolas", 8)
+                dgvPropietarios.Columns("Telefono").Width = 120  ' ANCHO FIJO
+                dgvPropietarios.Columns("Telefono").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            End If
+
+            If dgvPropietarios.Columns.Contains("MatriculaInmobiliaria") Then
+                dgvPropietarios.Columns("MatriculaInmobiliaria").HeaderText = "📋 MATRÍCULA"
+                dgvPropietarios.Columns("MatriculaInmobiliaria").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+                dgvPropietarios.Columns("MatriculaInmobiliaria").DefaultCellStyle.Font = New Font("Consolas", 8)
+                dgvPropietarios.Columns("MatriculaInmobiliaria").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                dgvPropietarios.Columns("MatriculaInmobiliaria").FillWeight = 60 ' 20% del espacio restante
+            End If
+
+            ' Ocultar columnas no relevantes
+            If dgvPropietarios.Columns.Contains("Activo") Then dgvPropietarios.Columns("Activo").Visible = False
+            If dgvPropietarios.Columns.Contains("FechaRegistro") Then dgvPropietarios.Columns("FechaRegistro").Visible = False
+            If dgvPropietarios.Columns.Contains("SaldoActual") Then dgvPropietarios.Columns("SaldoActual").Visible = False
+            If dgvPropietarios.Columns.Contains("EstadoCuenta") Then dgvPropietarios.Columns("EstadoCuenta").Visible = False
+            If dgvPropietarios.Columns.Contains("UltimoPago") Then dgvPropietarios.Columns("UltimoPago").Visible = False
+            If dgvPropietarios.Columns.Contains("TieneUltimoPago") Then dgvPropietarios.Columns("TieneUltimoPago").Visible = False
+            If dgvPropietarios.Columns.Contains("DiasEnMora") Then dgvPropietarios.Columns("DiasEnMora").Visible = False
+            If dgvPropietarios.Columns.Contains("TotalIntereses") Then dgvPropietarios.Columns("TotalIntereses").Visible = False
+        End If
+    End Sub
+
+    Private Sub ActualizarEstadisticas(lista As List(Of Apartamento))
+        If lista IsNot Nothing Then
+            Dim totalApartamentos As Integer = lista.Count
+            Dim conResidente As Integer = 0
+            Dim conCorreo As Integer = 0
+            Dim conTelefono As Integer = 0
+
+            ' Contar apartamentos con datos
+            For Each apartamento As Apartamento In lista
+                If Not String.IsNullOrWhiteSpace(apartamento.NombreResidente) Then
+                    conResidente += 1
+                End If
+                If Not String.IsNullOrWhiteSpace(apartamento.Correo) Then
+                    conCorreo += 1
+                End If
+                If Not String.IsNullOrWhiteSpace(apartamento.Telefono) Then
+                    conTelefono += 1
+                End If
+            Next
+
+            ' FORMATO VERTICAL CORREGIDO Y BIEN VISIBLE
+            lblEstadisticas.Text = String.Format(
+                "📊 RESUMEN: {0} apartamentos encontrados - 👤 Con residente: {1} ({2:F1}%) - 📧 Con correo: {3} ({4:F1}%)   📱 Con teléfono: {5} ({6:F1}%)",
+                totalApartamentos,
+                conResidente,
+                If(totalApartamentos > 0, (conResidente / totalApartamentos) * 100, 0),
+                conCorreo,
+                If(totalApartamentos > 0, (conCorreo / totalApartamentos) * 100, 0),
+                conTelefono,
+                If(totalApartamentos > 0, (conTelefono / totalApartamentos) * 100, 0),
+                DateTime.Now.ToString("HH:mm")
+            )
+            lblEstadisticas.BackColor = Color.FromArgb(248, 215, 218)
+            lblEstadisticas.ForeColor = Color.FromArgb(114, 28, 36)
+        Else
+            lblEstadisticas.Text = "⚠️ No se pudieron cargar los datos de propietarios" & vbCrLf &
+                                  "💡 Verifique la conexión a la base de datos"
+            lblEstadisticas.BackColor = Color.FromArgb(248, 215, 218)
+            lblEstadisticas.ForeColor = Color.FromArgb(114, 28, 36)
+        End If
+    End Sub
+
+    Private Sub dgvPropietarios_SelectionChanged(sender As Object, e As EventArgs)
+        Try
+            If dgvPropietarios.SelectedRows.Count > 0 Then
+                Dim selectedRow As DataGridViewRow = dgvPropietarios.SelectedRows(0)
+                Dim torre As String = If(selectedRow.Cells("Torre").Value?.ToString(), "N/A")
+                Dim apartamento As String = If(selectedRow.Cells("NumeroApartamento").Value?.ToString(), "N/A")
+                Dim residente As String = If(selectedRow.Cells("NombreResidente").Value?.ToString(), "Sin registrar")
+                Dim correo As String = If(selectedRow.Cells("Correo").Value?.ToString(), "Sin correo")
+                Dim telefono As String = If(selectedRow.Cells("Telefono").Value?.ToString(), "Sin teléfono")
+
+                lblEstadisticas.Text = String.Format(
+                    "🏢 APARTAMENTO SELECCIONADO: 📍 Torre {0} - Apartamento {1} - 👤 RESIDENTE: {2} - 📧 Correo: {3}   📱 Teléfono: {4}",
+                    torre, apartamento, residente, correo, telefono
+                )
+                lblEstadisticas.BackColor = Color.FromArgb(64, 64, 64)      ' Fondo gris oscuro
+                lblEstadisticas.ForeColor = Color.White                      ' Texto blanco para buen contraste
+
+            End If
+        Catch ex As Exception
+            ' Ignorar errores de selección
         End Try
     End Sub
 
@@ -261,17 +422,6 @@ Public Class FormPropietarios
         CargarPropietarios()
     End Sub
 
-    Private Sub btnAgregar_Click(sender As Object, e As EventArgs)
-        Try
-            Dim formDetallePropietario As New FormDetallePropietario()
-            If formDetallePropietario.ShowDialog() = DialogResult.OK Then
-                CargarPropietarios(txtBuscador.Text.Trim())
-            End If
-        Catch ex As Exception
-            MessageBox.Show($"Error al abrir formulario de agregar propietario: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
-    End Sub
-
     Private Sub btnEditar_Click(sender As Object, e As EventArgs)
         Try
             If dgvPropietarios.SelectedRows.Count > 0 Then
@@ -312,7 +462,31 @@ Public Class FormPropietarios
     End Sub
 
     Private Sub btnVolver_Click(sender As Object, e As EventArgs)
-        Me.Close()
+        Try
+            Me.Close()
+        Catch ex As Exception
+            Me.Close()
+        End Try
+    End Sub
+
+    Private Sub FormPropietarios_Resize(sender As Object, e As EventArgs) Handles MyBase.Resize
+        Try
+            ' Reposicionar el botón VOLVER centrado en el panel inferior
+            If btnVolver IsNot Nothing Then
+                btnVolver.Location = New Point((Me.Width - btnVolver.Width) \ 2, 10)
+            End If
+
+            ' Redimensionar panel de estadísticas para usar todo el ancho disponible
+            If lblEstadisticas IsNot Nothing Then
+                Dim anchoDisponible As Integer = Me.Width - 250
+                If anchoDisponible > 400 Then
+                    lblEstadisticas.Width = anchoDisponible
+                End If
+            End If
+
+        Catch ex As Exception
+            ' Ignorar errores de redimensionamiento
+        End Try
     End Sub
 
 End Class
